@@ -57,7 +57,7 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5174',
     'https://piyush-products.vercel.app',    // ← ये लाइन
-    'https://yourdomain.com',
+    'https://thelootbazaar.vercel.app',
     'https://admin.yourdomain.com'
 ];
         
