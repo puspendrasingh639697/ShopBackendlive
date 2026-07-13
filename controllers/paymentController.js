@@ -318,8 +318,8 @@ export const checkout = async (req, res) => {
             email: email,
             phone: phone,
             hash: hash,
-            surl: "https://your-domain.com/api/payment/verification",
-            furl: "https://your-domain.com/api/payment/failure"
+            surl: "https://piyush-sir.onrender.com/api/payment/verification",
+            furl: "https://piyush-sir.onrender.com/api/payment/failure"
         });
 
         // Order update karo
