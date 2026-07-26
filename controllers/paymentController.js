@@ -640,13 +640,15 @@ import Coupon from '../models/Coupon.js';
 import sendEmail from '../utils/sendEmail.js'; 
 import axios from 'axios';
 
-// ✅ 1. Checkout (Payment Initiate)
+// backend/controllers/paymentController.js
+// backend/controllers/paymentController.js
+
 export const checkout = async (req, res) => {
     try {
-        let { amount, couponCode, orderId, name, email, phone, txnid } = req.body; 
+        let { amount, couponCode, orderId, name, email, phone, txnid } = req.body;
         let discountApplied = 0;
 
-        console.log('📦 Easebuzz Checkout Request:', { amount, couponCode, orderId });
+        console.log('📦 Easebuzz Request:', { amount, couponCode, orderId });
 
         // Coupon Logic
         if (couponCode) {
@@ -691,27 +693,27 @@ export const checkout = async (req, res) => {
         params.append('hash', hash);
 
         const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
-        params.append('surl', `${baseUrl}/payment-success`);
-        params.append('furl', `${baseUrl}/payment-failure`);
+        params.append('surl', `${baseUrl}/api/payment/easebuzz/callback`);
+        params.append('furl', `${baseUrl}/api/payment/easebuzz/failure`);
 
         console.log('🚀 Sending to Easebuzz...');
 
-        // Easebuzz API Call
+        // ✅ FIX: Timeout increase + better error handling
         let response;
         try {
             response = await axios.post('https://pay.easebuzz.in/payment/initiateLink', params, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                timeout: 30000
+                timeout: 120000 // ✅ 120 seconds (2 minutes)
             });
         } catch (axiosError) {
             console.error('❌ Easebuzz API Error:', axiosError.message);
             
-            // Fallback to COD
+            // ✅ Fallback to COD
             return res.status(200).json({
                 success: false,
-                message: 'Payment gateway busy. Please use COD.',
+                message: 'Payment gateway timeout. Please use COD.',
                 fallback: 'cod',
                 orderId: orderId
             });
