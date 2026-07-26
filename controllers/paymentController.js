@@ -705,7 +705,7 @@ export const checkout = async (req, res) => {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                timeout: 120000 // ✅ 120 seconds (2 minutes)
+                 timeout: 180000  // ✅ 120 seconds (2 minutes)
             });
         } catch (axiosError) {
             console.error('❌ Easebuzz API Error:', axiosError.message);
