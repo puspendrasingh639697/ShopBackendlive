@@ -637,15 +637,16 @@
 import crypto from 'crypto';
 import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js';
+import sendEmail from '../utils/sendEmail.js'; 
 import axios from 'axios';
 
-// 1. Checkout (Payment Initiate)
+// ✅ 1. Checkout (Payment Initiate)
 export const checkout = async (req, res) => {
     try {
-        let { amount, couponCode, orderId, name, email, phone, txnid } = req.body;
+        let { amount, couponCode, orderId, name, email, phone, txnid } = req.body; 
         let discountApplied = 0;
 
-        console.log('📦 Easebuzz Request:', { amount, couponCode, orderId, name, email });
+        console.log('📦 Easebuzz Checkout Request:', { amount, couponCode, orderId });
 
         // Coupon Logic
         if (couponCode) {
@@ -675,11 +676,10 @@ export const checkout = async (req, res) => {
 
         const finalAmount = parseFloat(amount).toFixed(2);
 
-        // ✅ Hash generate
+        // Hash generate
         const hashString = `${process.env.EASEBUZZ_KEY}|${txnid}|${finalAmount}|ProductInfo|${name}|${email}|||||||||||${process.env.EASEBUZZ_SALT}`;
         const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 
-        // ✅ Form Data
         const params = new URLSearchParams();
         params.append('key', process.env.EASEBUZZ_KEY);
         params.append('txnid', txnid);
@@ -696,19 +696,19 @@ export const checkout = async (req, res) => {
 
         console.log('🚀 Sending to Easebuzz...');
 
-        // ✅ API Call with timeout
+        // Easebuzz API Call
         let response;
         try {
             response = await axios.post('https://pay.easebuzz.in/payment/initiateLink', params, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                timeout: 30000 // ✅ 30 seconds
+                timeout: 30000
             });
         } catch (axiosError) {
             console.error('❌ Easebuzz API Error:', axiosError.message);
             
-            // ✅ Fallback to COD
+            // Fallback to COD
             return res.status(200).json({
                 success: false,
                 message: 'Payment gateway busy. Please use COD.',
@@ -717,7 +717,7 @@ export const checkout = async (req, res) => {
             });
         }
 
-        // ✅ Update Order
+        // Update Order
         await Order.findByIdAndUpdate(orderId, {
             txnid: txnid,
             paymentMethod: 'Easebuzz'
@@ -738,6 +738,90 @@ export const checkout = async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Payment initiation failed'
+        });
+    }
+};
+
+// ✅ 2. Payment Verification - Easebuzz Callback
+export const paymentVerification = async (req, res) => {
+    try {
+        const { status, txnid, amount, hash, email, firstname, productinfo } = req.body;
+
+        console.log('🔔 Easebuzz Callback:', { status, txnid, amount });
+
+        // Easebuzz Hash Verify
+        const hashString = `${process.env.EASEBUZZ_SALT}|${status}||||||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${process.env.EASEBUZZ_KEY}`;
+        const checkHash = crypto.createHash('sha512').update(hashString).digest('hex');
+
+        if (checkHash === hash && status === 'success') {
+            // ✅ Payment Success
+            const order = await Order.findOneAndUpdate(
+                { txnid: txnid },
+                { 
+                    isPaid: true, 
+                    paidAt: Date.now(), 
+                    paymentMethod: 'Easebuzz',
+                    paymentStatus: 'Completed',
+                    status: 'Processing' 
+                },
+                { new: true }
+            ).populate('user', 'name email');
+
+            // Email Notification
+            try {
+                await sendEmail({
+                    email: order.user.email,
+                    subject: "✅ Payment Confirmed! - The Loot Bazaar",
+                    message: `Hello ${order.user.name},\n\nYour payment of ₹${order.totalPrice} has been confirmed.\nTransaction ID: ${txnid}\n\nThank you for shopping with us! 🎉`
+                });
+            } catch (mailError) {
+                console.log("Email failed but payment updated");
+            }
+
+            // Redirect to success page
+            const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+            return res.redirect(`${baseUrl}/payment-success?txnid=${txnid}`);
+
+        } else {
+            // ❌ Payment Failed
+            console.log('❌ Payment Failed:', { status, hash, checkHash });
+            const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+            return res.redirect(`${baseUrl}/payment-failure?txnid=${txnid}`);
+        }
+
+    } catch (error) {
+        console.error('Verification Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
+    }
+};
+
+// ✅ 3. Payment Failure Handler (Optional)
+export const paymentFailure = async (req, res) => {
+    try {
+        const { txnid, status, error } = req.body;
+        console.log('❌ Payment Failure:', { txnid, status, error });
+        
+        // Update order status
+        if (txnid) {
+            await Order.findOneAndUpdate(
+                { txnid: txnid },
+                { 
+                    paymentStatus: 'Failed',
+                    status: 'Pending'
+                }
+            );
+        }
+
+        const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+        return res.redirect(`${baseUrl}/payment-failure?txnid=${txnid}`);
+    } catch (error) {
+        console.error('Payment Failure Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
         });
     }
 };
