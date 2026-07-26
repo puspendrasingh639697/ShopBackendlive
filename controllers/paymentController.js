@@ -745,15 +745,30 @@ export const checkout = async (req, res) => {
 };
 
 // ✅ 2. Payment Verification - Easebuzz Callback
+// backend/controllers/paymentController.js
+
 export const paymentVerification = async (req, res) => {
     try {
         const { status, txnid, amount, hash, email, firstname, productinfo } = req.body;
 
-        console.log('🔔 Easebuzz Callback:', { status, txnid, amount });
+        console.log('🔔 Easebuzz Callback:', req.body);
+
+        // ✅ FIX: Agar data missing hai toh error bhejo
+        if (!status || !txnid || !hash) {
+            console.log('❌ Missing callback data:', req.body);
+            const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+            return res.redirect(`${baseUrl}/payment-failure?error=Invalid%20callback%20data`);
+        }
 
         // Easebuzz Hash Verify
         const hashString = `${process.env.EASEBUZZ_SALT}|${status}||||||||||||||${email}|${firstname}|${productinfo}|${amount}|${txnid}|${process.env.EASEBUZZ_KEY}`;
         const checkHash = crypto.createHash('sha512').update(hashString).digest('hex');
+
+        console.log('🔐 Hash Check:', { 
+            received: hash, 
+            calculated: checkHash,
+            match: checkHash === hash 
+        });
 
         if (checkHash === hash && status === 'success') {
             // ✅ Payment Success
@@ -768,6 +783,12 @@ export const paymentVerification = async (req, res) => {
                 },
                 { new: true }
             ).populate('user', 'name email');
+
+            if (!order) {
+                console.log('❌ Order not found for txnid:', txnid);
+                const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+                return res.redirect(`${baseUrl}/payment-failure?error=Order%20not%20found`);
+            }
 
             // Email Notification
             try {
@@ -793,10 +814,8 @@ export const paymentVerification = async (req, res) => {
 
     } catch (error) {
         console.error('Verification Error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: error.message 
-        });
+        const baseUrl = process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com';
+        return res.redirect(`${baseUrl}/payment-failure?error=${error.message}`);
     }
 };
 
