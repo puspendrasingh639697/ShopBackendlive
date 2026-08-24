@@ -1,81 +1,67 @@
+
+
+
 // import Product from '../models/Product.js';
+// import Category from '../models/Category.js';
 
-// // 1. Naya Product dalne ke liye (Admin + Image Support)
-// // export const addProduct = async (req, res) => {
-// //     console.log("--- Add Product Request Aayi Hai ---");
-// //     console.log("Body Data:", req.body);
-// //     console.log("File Data:", req.file);
-
-// //     try {
-// //         const { name, description, price, category, stock } = req.body;
-
-// //         if (!name || !price || !description || !category || !stock) {
-// //             console.log("❌ Error: Kuch fields missing hain");
-// //             return res.status(400).json({ message: "Bhai, saari details (name, price, desc, cat, stock) bharna zaroori hai!" });
-// //         }
-
-// //         if (!req.file) {
-// //             console.log("❌ Error: Image upload nahi hui");
-// //             return res.status(400).json({ message: "Bhai, bartan ki photo toh dalo!" });
-// //         }
-
-// //         const newProduct = new Product({
-// //             name,
-// //             description,
-// //             price: Number(price), 
-// //             category,
-// //             stock: Number(stock),
-// //             image: `/uploads/${req.file.filename}`
-// //         });
-
-// //         const savedProduct = await newProduct.save();
-        
-// //         console.log("✅ Success: Product database mein save ho gaya!");
-// //         res.status(201).json({ message: "Product Added Successfully!", product: savedProduct });
-
-// //     } catch (error) {
-// //         console.log("🔥 Catch Error:", error.message);
-// //         res.status(500).json({ message: "Server Error: " + error.message });
-// //     }
-// // };
-
-
-
+// // =======================
+// //   ADD PRODUCT
+// // =======================
 // export const addProduct = async (req, res) => {
 //     console.log("--- Add Product Request Aayi Hai ---");
 //     console.log("Body Data:", req.body);
 //     console.log("File Data:", req.file);
 
 //     try {
-//         const { name, description, price, category, stock } = req.body;
+//         const { name, description, price, category, stock, isFeatured } = req.body;
 
-//         if (!name || !price || !description || !category || !stock) {
-//             return res.status(400).json({ message: "All fields are required!" });
+//         if (!name || !price || !description || !category || stock === undefined) {
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: "All required fields (name, price, description, category, stock) must be provided!" 
+//             });
 //         }
 
 //         if (!req.file) {
-//             return res.status(400).json({ message: "Product image is required!" });
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: "Product image is required!" 
+//             });
 //         }
 
-//         // ✅ Cloudinary se full URL le rahe hain
+//         // ✅ Verify if category exists in database
+//         const categoryExists = await Category.findById(category);
+//         if (!categoryExists) {
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: "Invalid Category ID provided!" 
+//             });
+//         }
+
+//         // ✅ Get image URL (Cloudinary or local)
 //         let imageUrl = '';
 //         if (req.file.path) {
-//             imageUrl = req.file.path;  // Cloudinary full URL
+//             imageUrl = req.file.path;
 //         } else if (req.file.secure_url) {
-//             imageUrl = req.file.secure_url;  // Alternative field
+//             imageUrl = req.file.secure_url;
 //         } else {
-//             imageUrl = `/uploads/${req.file.filename}`;  // Fallback
+//             imageUrl = `/uploads/${req.file.filename}`;
 //         }
 
-//         console.log("✅ Image URL:", imageUrl);
+//         const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
 
 //         const newProduct = new Product({
-//             name,
-//             description,
+//             name: name.trim(),
+//             slug,
+//             description: description.trim(),
 //             price: Number(price),
 //             category,
 //             stock: Number(stock),
-//             image: imageUrl
+//             images: [imageUrl],
+//             isFeatured: isFeatured === 'true' || isFeatured === true,
+//             reviews: [],
+//             numReviews: 0,
+//             rating: 0
 //         });
 
 //         const savedProduct = await newProduct.save();
@@ -89,33 +75,43 @@
 
 //     } catch (error) {
 //         console.log("Error:", error.message);
-//         res.status(500).json({ message: "Server Error: " + error.message });
+//         res.status(500).json({ 
+//             success: false, 
+//             message: "Server Error: " + error.message 
+//         });
 //     }
 // };
 
-// // 2. Saare products dikhane ke liye
-// // controllers/productController.js
-// // backend/controllers/productController.js - Safe queries
-
+// // =======================
+// //   GET ALL PRODUCTS (with filtering & sorting)
+// // =======================
 // export const getProducts = async (req, res) => {
 //     try {
-//         const { keyword, category, sort, minPrice, maxPrice } = req.query;
+//         const { keyword, category, sort, minPrice, maxPrice, minRating, inStock } = req.query;
 //         let query = {};
         
-//         // ✅ Safe keyword search (using $regex safely)
+//         // ✅ Search by keyword
 //         if (keyword && keyword.trim()) {
-//             // Escape regex special characters
 //             const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-//             query.name = { $regex: safeKeyword, $options: 'i' };
+//             query.$or = [
+//                 { name: { $regex: safeKeyword, $options: 'i' } },
+//                 { description: { $regex: safeKeyword, $options: 'i' } }
+//             ];
 //         }
         
-//         // ✅ Safe category filter (whitelist check)
-//         const validCategories = ['Copper Utensils', 'Steel Bottles', 'Thermoware & Lunchboxes', 'Cookware Sets', 'Home Appliances', 'Cookers'];
-//         if (category && validCategories.includes(category)) {
-//             query.category = category;
+//         // ✅ Category filter (ObjectId or Slug support)
+//         if (category) {
+//             if (category.match(/^[0-9a-fA-F]{24}$/)) {
+//                 query.category = category;
+//             } else {
+//                 const catDoc = await Category.findOne({ slug: category });
+//                 if (catDoc) {
+//                     query.category = catDoc._id;
+//                 }
+//             }
 //         }
         
-//         // ✅ Safe price range
+//         // ✅ Price range
 //         if (minPrice && !isNaN(minPrice) && Number(minPrice) >= 0) {
 //             query.price = { ...query.price, $gte: Number(minPrice) };
 //         }
@@ -123,272 +119,431 @@
 //             query.price = { ...query.price, $lte: Number(maxPrice) };
 //         }
         
-//         // ✅ Safe sort (whitelist)
-//         let sortOption = { createdAt: -1 }; // default
+//         // ✅ Rating filter
+//         if (minRating && !isNaN(minRating) && Number(minRating) > 0) {
+//             query.rating = { $gte: Number(minRating) };
+//         }
+        
+//         // ✅ Stock filter
+//         if (inStock === 'true') {
+//             query.stock = { $gt: 0 };
+//         }
+        
+//         // ✅ Sorting
+//         let sortOption = { createdAt: -1 };
 //         const validSorts = {
 //             'price-low': { price: 1 },
 //             'price-high': { price: -1 },
 //             'newest': { createdAt: -1 },
 //             'oldest': { createdAt: 1 },
 //             'name-asc': { name: 1 },
-//             'name-desc': { name: -1 }
+//             'name-desc': { name: -1 },
+//             'rating-desc': { rating: -1, numReviews: -1 },
+//             'popular': { purchaseCount: -1, viewCount: -1 }
 //         };
         
 //         if (sort && validSorts[sort]) {
 //             sortOption = validSorts[sort];
 //         }
         
-//         const products = await Product.find(query).sort(sortOption);
+//         const products = await Product.find(query)
+//             .populate('category', 'name slug')
+//             .sort(sortOption);
         
-//         // ✅ Sanitize output - remove any potential injected fields
-//         const sanitizedProducts = products.map(p => ({
-//             _id: p._id,
-//             name: p.name,
-//             description: p.description,
-//             price: p.price,
-//             category: p.category,
-//             stock: p.stock,
-//             image: p.image,
-//             createdAt: p.createdAt
-//         }));
-        
-//         res.status(200).json(sanitizedProducts);
+//         res.status(200).json({
+//             success: true,
+//             count: products.length,
+//             products
+//         });
         
 //     } catch (error) {
-//         console.error("Search error:", error);
-//         res.status(500).json({ message: "Search failed" });
+//         console.error("Get products error:", error);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: "Failed to fetch products: " + error.message 
+//         });
 //     }
 // };
-// // 3. ✅ SINGLE PRODUCT FETCH (ID se) - YEH FUNCTION ADD KARO
+
+// // =======================
+// //   GET SINGLE PRODUCT BY ID
+// // =======================
 // export const getProductById = async (req, res) => {
 //     console.log("--- Fetching Single Product ID:", req.params.id, "---");
 //     try {
-//         const product = await Product.findById(req.params.id);
+//         const product = await Product.findById(req.params.id).populate('category', 'name slug');
 //         if (!product) {
-//             console.log("❌ Product not found");
-//             return res.status(404).json({ message: "Product not found" });
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found" 
+//             });
 //         }
-//         console.log("✅ Product found:", product.name);
-//         res.status(200).json(product);
-//     } catch (error) {
-//         console.log("🔥 Error fetching product:", error.message);
-//         res.status(500).json({ message: error.message });
-//     }
-// };
-
-// // 4. Search Products
-// export const searchProducts = async (req, res) => {
-//     const query = req.query.name;
-//     console.log("--- Searching for:", query, "---");
-//     try {
-//         const products = await Product.find({
-//             name: { $regex: query, $options: 'i' } 
+        
+//         // ✅ Increment view count
+//         product.viewCount = (product.viewCount || 0) + 1;
+//         await product.save();
+        
+//         res.status(200).json({
+//             success: true,
+//             product
 //         });
-//         res.status(200).json(products);
 //     } catch (error) {
-//         res.status(500).json({ message: error.message });
+//         console.log("Error fetching product:", error.message);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
 //     }
 // };
 
-// // 5. Product update karne ke liye
-// // export const updateProduct = async (req, res) => {
-// //     console.log("--- Updating Product ID:", req.params.id, "---");
-// //     try {
-// //         let updateData = { ...req.body };
-
-// //         if (req.file) {
-// //             console.log("🔄 Nayi image detect hui, path update ho raha hai...");
-// //             updateData.image = req.file.path;
-// //         }
-
-// //         const product = await Product.findByIdAndUpdate(
-// //             req.params.id, 
-// //             updateData, 
-// //             { new: true }
-// //         );
-
-// //         console.log("✅ Product Update Ho Gaya!");
-// //         res.status(200).json({ message: "Product Updated!", product });
-// //     } catch (error) {
-// //         console.log("🔥 Update Error:", error.message);
-// //         res.status(500).json({ message: error.message });
-// //     }
-// // };
+// // =======================
+// //   UPDATE PRODUCT
+// // =======================
 // export const updateProduct = async (req, res) => {
 //     console.log("--- Updating Product ID:", req.params.id, "---");
 //     try {
 //         let updateData = { ...req.body };
+        
+//         if (updateData.price) updateData.price = Number(updateData.price);
+//         if (updateData.stock) updateData.stock = Number(updateData.stock);
 
 //         if (req.file) {
-//             console.log("🔄 Nayi image detect hui, path update ho raha hai...");
-//             updateData.image = `/uploads/${req.file.filename}`;  // ✅ YEH LINE CHANGE KI
+//             updateData.images = [req.file.path || `/uploads/${req.file.filename}`];
 //         }
 
 //         const product = await Product.findByIdAndUpdate(
 //             req.params.id, 
 //             updateData, 
-//             { new: true }
-//         );
+//             { new: true, runValidators: true }
+//         ).populate('category', 'name slug');
 
-//         console.log("✅ Product Update Ho Gaya!");
-//         res.status(200).json({ message: "Product Updated!", product });
+//         if (!product) {
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found" 
+//             });
+//         }
+
+//         console.log("✅ Product Updated!");
+//         res.status(200).json({ 
+//             success: true, 
+//             message: "Product Updated!", 
+//             product 
+//         });
 //     } catch (error) {
-//         console.log("🔥 Update Error:", error.message);
-//         res.status(500).json({ message: error.message });
+//         console.log("Update Error:", error.message);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
 //     }
 // };
-// // 6. Product delete karne ke liye
+
+// // =======================
+// //   DELETE PRODUCT
+// // =======================
 // export const deleteProduct = async (req, res) => {
 //     console.log("--- Deleting Product ID:", req.params.id, "---");
 //     try {
 //         const product = await Product.findByIdAndDelete(req.params.id);
 //         if (!product) {
-//             return res.status(404).json({ message: "Product not found" });
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found" 
+//             });
 //         }
 //         console.log("✅ Product Deleted Successfully!");
-//         res.status(200).json({ message: "Product deleted successfully" });
+//         res.status(200).json({ 
+//             success: true, 
+//             message: "Product deleted successfully" 
+//         });
 //     } catch (error) {
-//         console.log("🔥 Delete Error:", error.message);
-//         res.status(500).json({ message: error.message });
+//         console.log("Delete Error:", error.message);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
 //     }
 // };
 
-
-// // controllers/productController.js mein add karo
-
+// // =======================
+// //   CREATE PRODUCT REVIEW
+// // =======================
 // export const createProductReview = async (req, res) => {
-//     const { rating, comment } = req.body;
+//     const { rating, comment, title } = req.body;
 
 //     try {
 //         const product = await Product.findById(req.params.id);
 
 //         if (!product) {
-//             return res.status(404).json({ success: false, message: "Product nahi mila!" });
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found!" 
+//             });
 //         }
 
-//         // 🛠️ FIX: Agar reviews array nahi hai, toh empty array use karo
-//         const reviews = product.reviews || [];
-
-//         const alreadyReviewed = reviews.find(
+//         const alreadyReviewed = product.reviews.find(
 //             (r) => r.user.toString() === req.user._id.toString()
 //         );
 
 //         if (alreadyReviewed) {
-//             return res.status(400).json({ success: false, message: "Pehle hi review de chuke ho!" });
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: "You have already reviewed this product!" 
+//             });
 //         }
 
 //         const review = {
+//             user: req.user._id,
 //             name: req.user.name,
 //             rating: Number(rating),
-//             comment,
-//             user: req.user._id,
+//             comment: comment.trim(),
+//             title: title || '',
+//             createdAt: new Date()
 //         };
-
-//         // 🛠️ FIX: Reviews array ko initialize karo agar undefined hai
-//         if (!product.reviews) {
-//             product.reviews = [];
-//         }
 
 //         product.reviews.push(review);
 //         product.numReviews = product.reviews.length;
-//         product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+        
+//         const totalRating = product.reviews.reduce((sum, item) => sum + item.rating, 0);
+//         product.rating = totalRating / product.reviews.length;
 
 //         await product.save();
-//         res.status(201).json({ success: true, message: "Review add ho gaya! ⭐" });
+        
+//         res.status(201).json({ 
+//             success: true, 
+//             message: "Review added successfully! ⭐",
+//             review,
+//             product: {
+//                 rating: product.rating,
+//                 numReviews: product.numReviews
+//             }
+//         });
 
 //     } catch (error) {
-//         res.status(500).json({ success: false, message: error.message });
+//         console.error("Add review error:", error);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
 //     }
 // };
 
-// // ✅ Get all reviews for a product (ADD THIS FUNCTION)
+// // =======================
+// //   GET PRODUCT REVIEWS
+// // =======================
 // export const getProductReviews = async (req, res) => {
 //     try {
 //         const product = await Product.findById(req.params.id);
         
 //         if (!product) {
-//             return res.status(404).json({ message: "Product not found" });
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found" 
+//             });
 //         }
         
-//         // Sort reviews by createdAt (newest first)
-//         const reviews = product.reviews.sort((a, b) => 
+//         const reviews = [...product.reviews].sort((a, b) => 
 //             new Date(b.createdAt) - new Date(a.createdAt)
 //         );
         
-//         // Calculate average rating
-//         let averageRating = 0;
-//         if (reviews.length > 0) {
-//             const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
-//             averageRating = sum / reviews.length;
-//         }
+//         const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+//         reviews.forEach(review => {
+//             if (review.rating >= 1 && review.rating <= 5) {
+//                 ratingDistribution[review.rating]++;
+//             }
+//         });
         
 //         res.json({
 //             success: true,
-//             reviews: reviews,
-//             totalReviews: reviews.length,
-//             averageRating: averageRating.toFixed(1)
+//             reviews,
+//             totalReviews: product.numReviews,
+//             averageRating: product.rating || 0,
+//             ratingDistribution
 //         });
 //     } catch (error) {
 //         console.error("Get product reviews error:", error);
-//         res.status(500).json({ message: error.message });
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
 //     }
 // };
 
-// backend/controllers/productController.js
+// // =======================
+// //   SEARCH PRODUCTS
+// // =======================
+// export const searchProducts = async (req, res) => {
+//     const query = req.query.q || req.query.name;
+//     console.log("--- Searching for:", query, "---");
+//     try {
+//         if (!query) {
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: "Search query is required" 
+//             });
+//         }
+        
+//         const safeKeyword = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+//         const products = await Product.find({
+//             $or: [
+//                 { name: { $regex: safeKeyword, $options: 'i' } },
+//                 { description: { $regex: safeKeyword, $options: 'i' } }
+//             ]
+//         }).populate('category', 'name slug');
+        
+//         res.status(200).json({
+//             success: true,
+//             count: products.length,
+//             products
+//         });
+//     } catch (error) {
+//         console.error("Search error:", error);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
+//     }
+// };
+
+// // =======================
+// //   GET POPULAR PRODUCTS
+// // =======================
+// export const getPopularProducts = async (req, res) => {
+//     try {
+//         const products = await Product.find({})
+//             .populate('category', 'name slug')
+//             .sort({ purchaseCount: -1, viewCount: -1, rating: -1 })
+//             .limit(10);
+        
+//         res.status(200).json({
+//             success: true,
+//             products
+//         });
+//     } catch (error) {
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
+//     }
+// };
+
+// // =======================
+// //   GET RELATED PRODUCTS
+// // =======================
+// export const getRelatedProducts = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const product = await Product.findById(id);
+        
+//         if (!product) {
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: "Product not found" 
+//             });
+//         }
+        
+//         const relatedProducts = await Product.find({
+//             category: product.category,
+//             _id: { $ne: id }
+//         })
+//         .populate('category', 'name slug')
+//         .sort({ rating: -1, createdAt: -1 })
+//         .limit(6);
+        
+//         res.status(200).json({
+//             success: true,
+//             products: relatedProducts
+//         });
+//     } catch (error) {
+//         res.status(500).json({ 
+//             success: false, 
+//             message: error.message 
+//         });
+//     }
+// };
+
+
 import Product from '../models/Product.js';
+import Category from '../models/Category.js';
 
 // =======================
 //   ADD PRODUCT
 // =======================
+// =======================
+//   ADD PRODUCT (WITH DEBUGGING)
+// =======================
 export const addProduct = async (req, res) => {
-    console.log("--- Add Product Request Aayi Hai ---");
-    console.log("Body Data:", req.body);
-    console.log("File Data:", req.file);
+    console.log("--- 🚀 Add Product Request Start ---");
+    console.log("BODY DATA:", req.body);
+    console.log("FILE DATA:", req.file);
 
     try {
-        const { name, description, price, category, stock } = req.body;
+        const { name, description, price, category, stock, isFeatured } = req.body;
 
-        if (!name || !price || !description || !category || !stock) {
+        console.log("Step 1: Validating fields...");
+        if (!name || !price || !description || !category || stock === undefined) {
+            console.log("❌ Error: Missing required fields");
             return res.status(400).json({ 
                 success: false, 
-                message: "All fields are required!" 
+                message: "All required fields (name, price, description, category, stock) must be provided!" 
             });
         }
 
+        console.log("Step 2: Checking image...");
         if (!req.file) {
+            console.log("❌ Error: Image missing");
             return res.status(400).json({ 
                 success: false, 
                 message: "Product image is required!" 
             });
         }
 
-        // ✅ Get image URL (Cloudinary or local)
-        let imageUrl = '';
-        if (req.file.path) {
-            imageUrl = req.file.path;
-        } else if (req.file.secure_url) {
-            imageUrl = req.file.secure_url;
+        console.log("Step 3: Checking category in DB...");
+        // Pehle check karein agar ID hai, nahi toh name se dhundhein
+        let categoryExists;
+        if (category.match(/^[0-9a-fA-F]{24}$/)) {
+            categoryExists = await Category.findById(category);
+            console.log("Category search by ID:", categoryExists ? "Found ✅" : "Not Found ❌");
         } else {
-            imageUrl = `/uploads/${req.file.filename}`;
+            categoryExists = await Category.findOne({ name: category });
+            console.log("Category search by Name:", categoryExists ? "Found ✅" : "Not Found ❌");
         }
 
-        console.log("✅ Image URL:", imageUrl);
+        if (!categoryExists) {
+            console.log("❌ Error: Invalid category provided:", category);
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid Category ID or Name provided!" 
+            });
+        }
 
+        console.log("Step 4: Preparing image URL...");
+        let imageUrl = req.file.path || req.file.secure_url || `uploads/${req.file.filename}`;
+        console.log("Image URL generated:", imageUrl);
+
+        const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+        console.log("Step 5: Creating new Product instance...");
         const newProduct = new Product({
             name: name.trim(),
+            slug: slug,
             description: description.trim(),
             price: Number(price),
-            category,
+            category: categoryExists._id, // Database se mili hui sahi ID save hogi
             stock: Number(stock),
             image: imageUrl,
+            isFeatured: isFeatured === 'true' || isFeatured === true,
             reviews: [],
             numReviews: 0,
             rating: 0
         });
 
+        console.log("Step 6: Saving to MongoDB...");
         const savedProduct = await newProduct.save();
         
-        console.log("✅ Product saved!");
+        console.log("✅ SUCCESS: Product saved with ID:", savedProduct._id);
+        
         res.status(201).json({ 
             success: true,
             message: "Product Added Successfully!", 
@@ -396,14 +551,13 @@ export const addProduct = async (req, res) => {
         });
 
     } catch (error) {
-        console.log("Error:", error.message);
+        console.error("❌ CRITICAL ERROR in Add Product:", error);
         res.status(500).json({ 
             success: false, 
             message: "Server Error: " + error.message 
         });
     }
 };
-
 // =======================
 //   GET ALL PRODUCTS (with filtering & sorting)
 // =======================
@@ -417,15 +571,20 @@ export const getProducts = async (req, res) => {
             const safeKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             query.$or = [
                 { name: { $regex: safeKeyword, $options: 'i' } },
-                { description: { $regex: safeKeyword, $options: 'i' } },
-                { category: { $regex: safeKeyword, $options: 'i' } }
+                { description: { $regex: safeKeyword, $options: 'i' } }
             ];
         }
         
-        // ✅ Category filter
-        const validCategories = ['Copper Utensils', 'Steel Bottles', 'Thermoware & Lunchboxes', 'Cookware Sets', 'Home Appliances', 'Cookers'];
-        if (category && validCategories.includes(category)) {
-            query.category = category;
+        // ✅ Category filter (ObjectId or Slug support)
+        if (category) {
+            if (category.match(/^[0-9a-fA-F]{24}$/)) {
+                query.category = category;
+            } else {
+                const catDoc = await Category.findOne({ slug: category });
+                if (catDoc) {
+                    query.category = catDoc._id;
+                }
+            }
         }
         
         // ✅ Price range
@@ -463,33 +622,21 @@ export const getProducts = async (req, res) => {
             sortOption = validSorts[sort];
         }
         
-        const products = await Product.find(query).sort(sortOption);
-        
-        // ✅ Sanitize output
-        const sanitizedProducts = products.map(p => ({
-            _id: p._id,
-            name: p.name,
-            description: p.description,
-            price: p.price,
-            category: p.category,
-            stock: p.stock,
-            image: p.image,
-            rating: p.rating || 0,
-            numReviews: p.numReviews || 0,
-            createdAt: p.createdAt
-        }));
+        const products = await Product.find(query)
+            .populate('category', 'name slug')
+            .sort(sortOption);
         
         res.status(200).json({
             success: true,
-            count: sanitizedProducts.length,
-            products: sanitizedProducts
+            count: products.length,
+            products
         });
         
     } catch (error) {
         console.error("Get products error:", error);
         res.status(500).json({ 
             success: false, 
-            message: "Failed to fetch products" 
+            message: "Failed to fetch products: " + error.message 
         });
     }
 };
@@ -500,7 +647,7 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
     console.log("--- Fetching Single Product ID:", req.params.id, "---");
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await Product.findById(req.params.id).populate('category', 'name slug');
         if (!product) {
             return res.status(404).json({ 
                 success: false, 
@@ -514,19 +661,7 @@ export const getProductById = async (req, res) => {
         
         res.status(200).json({
             success: true,
-            product: {
-                _id: product._id,
-                name: product.name,
-                description: product.description,
-                price: product.price,
-                category: product.category,
-                stock: product.stock,
-                image: product.image,
-                rating: product.rating || 0,
-                numReviews: product.numReviews || 0,
-                reviews: product.reviews || [],
-                createdAt: product.createdAt
-            }
+            product
         });
     } catch (error) {
         console.log("Error fetching product:", error.message);
@@ -545,19 +680,18 @@ export const updateProduct = async (req, res) => {
     try {
         let updateData = { ...req.body };
         
-        // Convert price and stock to numbers
         if (updateData.price) updateData.price = Number(updateData.price);
         if (updateData.stock) updateData.stock = Number(updateData.stock);
 
         if (req.file) {
-            updateData.image = req.file.path || `/uploads/${req.file.filename}`;
+            updateData.images = [req.file.path || req.file.secure_url || `/uploads/${req.file.filename}`];
         }
 
         const product = await Product.findByIdAndUpdate(
             req.params.id, 
             updateData, 
             { new: true, runValidators: true }
-        );
+        ).populate('category', 'name slug');
 
         if (!product) {
             return res.status(404).json({ 
@@ -624,7 +758,6 @@ export const createProductReview = async (req, res) => {
             });
         }
 
-        // Check if user already reviewed
         const alreadyReviewed = product.reviews.find(
             (r) => r.user.toString() === req.user._id.toString()
         );
@@ -648,7 +781,6 @@ export const createProductReview = async (req, res) => {
         product.reviews.push(review);
         product.numReviews = product.reviews.length;
         
-        // Calculate average rating
         const totalRating = product.reviews.reduce((sum, item) => sum + item.rating, 0);
         product.rating = totalRating / product.reviews.length;
 
@@ -657,7 +789,7 @@ export const createProductReview = async (req, res) => {
         res.status(201).json({ 
             success: true, 
             message: "Review added successfully! ⭐",
-            review: review,
+            review,
             product: {
                 rating: product.rating,
                 numReviews: product.numReviews
@@ -687,12 +819,10 @@ export const getProductReviews = async (req, res) => {
             });
         }
         
-        // Sort reviews by newest first
         const reviews = [...product.reviews].sort((a, b) => 
             new Date(b.createdAt) - new Date(a.createdAt)
         );
         
-        // Calculate rating distribution
         const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
         reviews.forEach(review => {
             if (review.rating >= 1 && review.rating <= 5) {
@@ -702,10 +832,10 @@ export const getProductReviews = async (req, res) => {
         
         res.json({
             success: true,
-            reviews: reviews,
+            reviews,
             totalReviews: product.numReviews,
             averageRating: product.rating || 0,
-            ratingDistribution: ratingDistribution
+            ratingDistribution
         });
     } catch (error) {
         console.error("Get product reviews error:", error);
@@ -734,10 +864,9 @@ export const searchProducts = async (req, res) => {
         const products = await Product.find({
             $or: [
                 { name: { $regex: safeKeyword, $options: 'i' } },
-                { description: { $regex: safeKeyword, $options: 'i' } },
-                { category: { $regex: safeKeyword, $options: 'i' } }
+                { description: { $regex: safeKeyword, $options: 'i' } }
             ]
-        });
+        }).populate('category', 'name slug');
         
         res.status(200).json({
             success: true,
@@ -759,6 +888,7 @@ export const searchProducts = async (req, res) => {
 export const getPopularProducts = async (req, res) => {
     try {
         const products = await Product.find({})
+            .populate('category', 'name slug')
             .sort({ purchaseCount: -1, viewCount: -1, rating: -1 })
             .limit(10);
         
@@ -793,6 +923,7 @@ export const getRelatedProducts = async (req, res) => {
             category: product.category,
             _id: { $ne: id }
         })
+        .populate('category', 'name slug')
         .sort({ rating: -1, createdAt: -1 })
         .limit(6);
         

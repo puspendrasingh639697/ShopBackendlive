@@ -749,6 +749,11 @@ export const updateUserProfile = async (req, res) => {
         if (user) {
             user.name = req.body.name || user.name;
             user.phone = req.body.phone || user.phone;
+            user.email = req.body.email || user.email;
+            
+            // Agar schema me gender aur dob hain tabhi ye dalein
+            if (req.body.gender) user.gender = req.body.gender;
+            if (req.body.dob) user.dob = req.body.dob;
             
             if (req.body.password) {
                 if (req.body.password.length < 6) {
@@ -758,22 +763,18 @@ export const updateUserProfile = async (req, res) => {
                 user.password = await bcrypt.hash(req.body.password, salt);
                 user.passwordChangedAt = new Date();
             }
+            
             const updatedUser = await user.save();
             res.json({
                 success: true,
                 message: "Profile updated!",
-                user: {
-                    _id: updatedUser._id,
-                    name: updatedUser.name,
-                    email: updatedUser.email,
-                    phone: updatedUser.phone,
-                    role: updatedUser.role
-                }
+                user: updatedUser
             });
         } else {
             res.status(404).json({ message: "User not found" });
         }
     } catch (error) {
+        console.error("Backend Update Error:", error); // <-- Yeh terminal me error print karega
         res.status(500).json({ message: "Update failed", error: error.message });
     }
 };

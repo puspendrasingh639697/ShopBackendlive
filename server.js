@@ -1,10 +1,11 @@
-// backend/server.js
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
 import connectDB from './config/db.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
@@ -17,14 +18,16 @@ import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from './routes/adminRoutes.js';
 import contentRoutes from './routes/contentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 
-// ✅ Security Middleware Imports
+// ✅ Security Middleware Imports (Rate limiters commented out / removed)
 import {
     securityHeaders,
     noSqlSanitize,
     globalLimiter,
-    authLimiter,
-    adminLimiter,
+    // authLimiter,
+    // adminLimiter,
     sanitizeQueryParams,
     sanitizeBody,
     preventParameterPollution,
@@ -40,26 +43,29 @@ dotenv.config();
 // App initialize
 const app = express();
 
-// ✅ Trust proxy for Render.com rate limiting
+// ✅ Trust proxy for Render.com / Cloudflare rate limiting
 app.set('trust proxy', 1);
 
 // =======================
-//   🔒 SECURITY MIDDLEWARE (Order Matters!)
+//   🔒 SECURITY & PERFORMANCE MIDDLEWARE
 // =======================
 
-// 1. Security Headers (Helmet) - MUST BE FIRST
+// 1. Security Headers (Helmet)
 app.use(securityHeaders);
 
-// 2. CORS setup with strict options
+// 2. Response Compression
+app.use(compression());
+
+// 3. CORS setup with strict options
 app.use(cors({
     origin: function(origin, callback) {
-       const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://piyush-products.vercel.app',    // ← ये लाइन
-    'https://thelootbazaar.vercel.app',
-    'https://admin.yourdomain.com'
-];
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'https://piyush-products.vercel.app',
+            'https://thelootbazaar.vercel.app',
+            'https://admin.yourdomain.com'
+        ];
         
         if (!origin) return callback(null, true);
         
@@ -76,32 +82,23 @@ app.use(cors({
     maxAge: 600
 }));
 
-// 3. Request Size Limiter (10MB limit)
+// 4. Request Size Limiter (10MB limit)
 app.use(requestSizeLimiter);
 
-// 4. Global Rate Limiting (500 requests per 15 minutes)
+// 5. Global Rate Limiting (Aap chahein toh ise bhi hata sakte hain, filhal rehne diya hai)
 app.use(globalLimiter);
 
-// 5. NoSQL Injection Protection
-app.use(noSqlSanitize);
-
-// 6. XSS Protection - DISABLED (causes issues on Render)
-// app.use(xssProtection);
-
-// 7. SQL Injection Prevention
-app.use(preventSqlInjection);
-
-// 8. Query Parameter Sanitizer
-app.use(sanitizeQueryParams);
-
-// 9. Body Parser
+// 6. Body Parser (MUST BE BEFORE sanitizers so form-data/files are parsed properly)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 10. Body Data Sanitizer (After body parser)
+// 7. NoSQL & SQL Injection Protection & Sanitizers
+app.use(noSqlSanitize);
+app.use(preventSqlInjection);
+app.use(sanitizeQueryParams);
 app.use(sanitizeBody);
 
-// 11. Prevent Parameter Pollution
+// 8. Prevent Parameter Pollution
 app.use(preventParameterPollution);
 
 // =======================
@@ -115,28 +112,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 connectDB();
 
 // =======================
-//   ROUTES with Additional Rate Limiting
+//   ROUTES
 // =======================
-
-// Apply strict rate limit to auth routes (5 attempts per 15 min)
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/user/login', authLimiter);
-app.use('/api/user/register', authLimiter);
-
-// Apply admin rate limit to admin routes (2000 requests per hour)
-app.use('/api/admin', adminLimiter);
-app.use('/api/products/add', adminLimiter);
-app.use('/api/products/update', adminLimiter);
-app.use('/api/products/delete', adminLimiter);
-
-// Public Routes
+// Public & Feature Routes (Saare routes ab yahan properly mapped hain)
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/coupon', couponRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use("/api/user", userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
@@ -149,15 +136,8 @@ app.get('/', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
-        message: '🚀 Backend is running with full security!',
-        timestamp: new Date().toISOString(),
-        security: {
-            headers: '✅ Helmet',
-            nosql: '✅ mongoSanitize',
-            rateLimit: '✅ Enabled',
-            cors: '✅ Strict',
-            sqlInjection: '✅ Protected'
-        }
+        message: '🚀 High-Performance Backend is running with full security!',
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -173,22 +153,18 @@ app.use((req, res) => {
 });
 
 // =======================
-//   Global Error Handler
+//   Global Error Handler (Updated)
 // =======================
 app.use((err, req, res, next) => {
-    console.error('❌ Error:', err.message);
-    console.error('Stack:', err.stack);
+    console.error('❌ Global Error Caught:', err);
     
-    const message = process.env.NODE_ENV === 'production' 
-        ? 'Internal server error. Please try again later.' 
-        : err.message;
-    
-    const statusCode = err.status || 500;
+    const errorMessage = err?.message || (typeof err === 'string' ? err : 'Internal Server Error');
+    const statusCode = err?.status || err?.statusCode || 500;
     
     res.status(statusCode).json({
         success: false,
-        message: message,
-        ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+        message: errorMessage,
+        ...(process.env.NODE_ENV !== 'production' && { stack: err?.stack }),
         timestamp: new Date().toISOString()
     });
 });
@@ -198,15 +174,6 @@ app.use((err, req, res, next) => {
 // =======================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`\n🔥 Server started on port ${PORT}`);
-    console.log(`🔒 Security Features:`);
-    console.log(`   ✅ Helmet (Security Headers)`);
-    console.log(`   ✅ NoSQL Injection Protection`);
-    console.log(`   ✅ SQL Injection Protection`);
-    console.log(`   ✅ Rate Limiting (Global/Auth/Admin)`);
-    console.log(`   ✅ Request Size Limiter (10MB)`);
-    console.log(`   ✅ Parameter Pollution Prevention`);
-    console.log(`   ✅ Input Sanitization`);
-    console.log(`   ✅ Strict CORS`);
-    console.log(`\n📡 Server is ready to accept requests!\n`);
+    console.log(`\n🔥 High-Scale Server started on port ${PORT}`);
+    console.log(`📡 Server is ready to handle high traffic!\n`);
 });

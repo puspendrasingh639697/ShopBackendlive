@@ -1,16 +1,16 @@
-// backend/middleware/uploadMiddleware.js
+
+
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
+// Direct keys dalkar check karo
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name:'qcqig88l',
+    api_key:'578776415224168',
+    api_secret:'vPlPanNxP96q4wUjxgBg8h6o408'
 });
+
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -21,13 +21,4 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage: storage });
-
-// ✅ YEH FUNCTION ADD KARO - Cloudinary URL return karne ke liye
-export const getImageUrl = (req) => {
-    if (req.file && req.file.path) {
-        return req.file.path;  // Cloudinary returns full URL
-    }
-    return null;
-};
-
 export default upload;

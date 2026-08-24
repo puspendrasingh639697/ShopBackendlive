@@ -1,43 +1,27 @@
-// import express from 'express';
-// import { checkout, paymentVerification } from '../controllers/paymentController.js';
-// import { protect } from '../middleware/authMiddleware.js';
-
-// const router = express.Router();
-
-// // Pehle user login check hoga (protect), fir checkout hoga
-// router.post('/checkout', protect, checkout);
-// router.post('/verify', protect, paymentVerification);
-
-// export default router;
-
-
-// backend/routes/paymentRoutes.js
-
 import express from 'express';
 import { 
     checkout, 
     paymentVerification,
-    paymentFailure 
+    razorpayWebhook 
 } from '../controllers/paymentController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// ✅ User Routes (Protected)
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 router.post('/checkout', protect, checkout);
 router.post('/verify', protect, paymentVerification);
 
-// ✅ Easebuzz Callback Routes (No Auth - Easebuzz se aayega)
-router.post('/easebuzz/callback', paymentVerification);
-router.post('/easebuzz/failure', paymentFailure);
+// ✅ Razorpay Webhook Route (Isme 'protect' nahi lagta kyunki Razorpay server hit karega)
+router.post('/webhook', razorpayWebhook);
 
-// ✅ Payment Success/Failure (Frontend redirect)
 router.get('/success', (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com'}/payment-success`);
+    res.redirect(`${FRONTEND_URL}/payment-success`);
 });
 
 router.get('/failure', (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL || 'https://piyush-sir.onrender.com'}/payment-failure`);
+    res.redirect(`${FRONTEND_URL}/payment-failure`);
 });
 
 export default router;

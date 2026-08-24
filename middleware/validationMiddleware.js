@@ -1,76 +1,7 @@
 // backend/middleware/validationMiddleware.js
 import mongoose from 'mongoose';
 
-// ✅ Product Validation
-export const validateProduct = (req, res, next) => {
-    const { name, description, price, category, stock } = req.body;
-    const errors = [];
-    
-    // Name validation
-    if (!name || name.trim().length < 3) {
-        errors.push('Product name must be at least 3 characters');
-    }
-    if (name && name.length > 100) {
-        errors.push('Product name cannot exceed 100 characters');
-    }
-    
-    // Description validation
-    if (!description || description.trim().length < 10) {
-        errors.push('Description must be at least 10 characters');
-    }
-    if (description && description.length > 2000) {
-        errors.push('Description cannot exceed 2000 characters');
-    }
-    
-    // Price validation
-    if (!price) {
-        errors.push('Price is required');
-    } else if (isNaN(price) || Number(price) <= 0) {
-        errors.push('Price must be a positive number');
-    } else if (Number(price) > 1000000) {
-        errors.push('Price cannot exceed 10,00,000');
-    }
-    
-    // Category validation
-    const validCategories = [
-        'Copper Utensils', 
-        'Steel Bottles', 
-        'Thermoware & Lunchboxes', 
-        'Cookware Sets', 
-        'Home Appliances', 
-        'Cookers'
-    ];
-    if (!category) {
-        errors.push('Category is required');
-    } else if (!validCategories.includes(category)) {
-        errors.push(`Category must be one of: ${validCategories.join(', ')}`);
-    }
-    
-    // Stock validation
-    if (stock === undefined || stock === null) {
-        errors.push('Stock is required');
-    } else if (isNaN(stock) || !Number.isInteger(Number(stock)) || Number(stock) < 0) {
-        errors.push('Stock must be a non-negative integer');
-    } else if (Number(stock) > 99999) {
-        errors.push('Stock cannot exceed 99,999');
-    }
-    
-    if (errors.length > 0) {
-        return res.status(400).json({ 
-            success: false, 
-            errors: errors,
-            message: 'Validation failed'
-        });
-    }
-    
-    // Sanitize inputs - remove HTML tags
-    req.body.name = name.trim().replace(/[<>]/g, '');
-    req.body.description = description.trim().replace(/[<>]/g, '');
-    req.body.price = Number(price);
-    req.body.stock = Number(stock);
-    
-    next();
-};
+
 
 // ✅ User Registration Validation
 export const validateUser = (req, res, next) => {

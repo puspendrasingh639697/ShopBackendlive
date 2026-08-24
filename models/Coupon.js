@@ -1,5 +1,3 @@
-
-
 import mongoose from 'mongoose';
 
 const couponSchema = new mongoose.Schema({
@@ -11,7 +9,6 @@ const couponSchema = new mongoose.Schema({
     },
     discountPercent: { 
         type: Number, 
-        required: true, 
         min: 1, 
         max: 100 
     },
@@ -48,7 +45,13 @@ const couponSchema = new mongoose.Schema({
         default: 'discount' 
     },
     // ✅ Fixed amount discount (if voucherType = 'fixed_amount')
-    fixedAmount: { type: Number, default: 0 }
+    fixedAmount: { type: Number, default: 0 },
+    
+    // ✅ Track kaunsa Admin/Super Admin yeh coupon bana raha hai
+    createdBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    }
 }, { timestamps: true });
 
 export default mongoose.model('Coupon', couponSchema);

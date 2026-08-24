@@ -1,20 +1,42 @@
+// import express from 'express';
+// import { 
+//     register, 
+//     login, 
+//     sendOtp, 
+//     verifyOtp, 
+//     forgotPassword, 
+//     resetPassword 
+// } from '../controllers/authController.js';
+
+// const router = express.Router();
+
+// router.post("/register", register);
+// router.post("/login", login);
+// router.post("/send-otp", sendOtp);
+// router.post("/verify-otp", verifyOtp);
+// router.post("/forgot-password", forgotPassword);
+// router.post("/reset-password/:token", resetPassword);
+
+// export default router;
 import express from 'express';
-// Controller se functions import karein
 import { 
     register, 
     login, 
+    sendOtp, 
+    verifyOtp, 
     forgotPassword, 
-    resetPassword 
+    resetPassword,
+    refreshToken // <-- Ye import hona chahiye
 } from '../controllers/authController.js';
 
 const router = express.Router();
 
-// 1. Register aur Login Routes
 router.post("/register", register);
 router.post("/login", login);
-
-// 2. Password Recovery Routes
+router.post("/send-otp", sendOtp);
+router.post("/verify-otp", verifyOtp);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+router.post("/refresh-token", refreshToken); // <-- Ye line add karein
 
 export default router;

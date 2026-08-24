@@ -1,27 +1,26 @@
 import Cart from '../models/Cart.js';
 
-
 // 1. Cart mein saaman daalne ke liye
 export const addToCart = async (req, res) => {
     const { userId, productId, quantity } = req.body;
+    const qty = Number(quantity) || 1; // Ensure quantity is a number
+
     try {
         let cart = await Cart.findOne({ userId });
 
         if (cart) {
-            // Check karo kya ye product pehle se cart mein hai?
-            const itemIndex = cart.items.findIndex(p => p.productId == productId);
+            // Safe comparison using .toString()
+            const itemIndex = cart.items.findIndex(p => p.productId.toString() === productId);
             
             if (itemIndex > -1) {
-                // Hai toh quantity badha do
-                cart.items[itemIndex].quantity += quantity;
+                // Number addition fix
+                cart.items[itemIndex].quantity += qty;
             } else {
-                // Nahi hai toh naya product push karo array mein
-                cart.items.push({ productId, quantity });
+                cart.items.push({ productId, quantity: qty });
             }
             cart = await cart.save();
         } else {
-            // Agar user ki koi cart hi nahi hai, toh nayi banao
-            cart = await Cart.create({ userId, items: [{ productId, quantity }] });
+            cart = await Cart.create({ userId, items: [{ productId, quantity: qty }] });
         }
         res.status(200).json({ message: "Cart Updated!", cart });
     } catch (error) {
@@ -36,7 +35,7 @@ export const getCart = async (req, res) => {
 
         if (!cart) return res.status(200).json({ items: [], totalAmount: 0 });
 
-        // 🛡️ Filter Logic: Sirf wo items rakho jinka productId null NAHI hai
+        // Filter Logic: Sirf wo items rakho jinka productId null NAHI hai
         const validItems = cart.items.filter(item => item.productId !== null);
 
         let totalAmount = 0;
@@ -46,8 +45,8 @@ export const getCart = async (req, res) => {
 
         res.status(200).json({
             cartId: cart._id,
-            items: validItems, // Ab null wala item frontend pe nahi dikhega
-            totalAmount: totalAmount, // Ab calculation sahi hogi (220 * 10 = 2200)
+            items: validItems,
+            totalAmount: totalAmount,
             totalItems: validItems.length
         });
 
@@ -56,36 +55,61 @@ export const getCart = async (req, res) => {
     }
 };
 
-// 3. Cart se saaman hatane ke liye (Remove from Cart)
+// cartController.js ke andar ye code hona chahiye:
 export const removeFromCart = async (req, res) => {
-    const { userId, productId } = req.params; // URL se data uthayenge
     try {
-        let cart = await Cart.findOne({ userId });
+        // ✅ Yahan req.body ki jagah req.params use karein kyunki URL se data aa raha hai
+        const { userId, productId } = req.params;
 
-        if (cart) {
-            // Filter karke wo product nikal do
-            cart.items = cart.items.filter(p => p.productId.toString() !== productId);
-            cart = await cart.save();
-            return res.status(200).json({ message: "Product hat gaya!", cart });
+        if (!userId || !productId) {
+            return res.status(400).json({ success: false, message: "UserId aur ProductId zaroori hai!" });
         }
-        res.status(404).json({ message: "Cart nahi mili!" });
+
+        // Cart find karke item remove karne ka logic
+        const cart = await Cart.findOne({ userId });
+        if (!cart) {
+            return res.status(404).json({ success: false, message: "Cart nahi mila!" });
+        }
+
+        // Item ko array se filter out karein
+        cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+        
+        // Total amount recalculate karein agar zaroori ho, fir save karein
+        await cart.save();
+
+        // Updated cart populate karke bhein
+        const updatedCart = await Cart.findOne({ userId }).populate('items.productId');
+
+        return res.status(200).json({ 
+            success: true, 
+            message: "Product hat gaya!", 
+            cart: updatedCart 
+        });
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Remove from cart error:", error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 // 4. Quantity kam ya zyada karne ke liye (Update Quantity)
 export const updateCartQuantity = async (req, res) => {
     const { userId, productId, quantity } = req.body;
+    const qty = Number(quantity);
+
     try {
         let cart = await Cart.findOne({ userId });
 
         if (cart) {
-            const itemIndex = cart.items.findIndex(p => p.productId == productId);
+            const itemIndex = cart.items.findIndex(p => p.productId.toString() === productId);
             
             if (itemIndex > -1) {
-                // Nayi quantity set karo
-                cart.items[itemIndex].quantity = quantity;
+                if (qty <= 0) {
+                    // Agar quantity 0 ya negative ho jaye, toh item remove kar do
+                    cart.items.splice(itemIndex, 1);
+                } else {
+                    cart.items[itemIndex].quantity = qty;
+                }
                 cart = await cart.save();
                 return res.status(200).json({ message: "Quantity update ho gayi!", cart });
             }

@@ -1,54 +1,28 @@
-
-
-// import express from 'express';
-// import { 
-//     createCoupon, 
-//     applyCoupon, 
-//     markCouponAsUsed,
-//     getAllCoupons,
-//     deleteCoupon,
-//     getUserVouchers
-// } from '../controllers/couponController.js';
-// import { protect, adminOnly } from '../middleware/authMiddleware.js';
-
-// const router = express.Router();
-
-// // ✅ User routes
-// router.post('/apply', protect, applyCoupon);
-// router.post('/mark-used', protect, markCouponAsUsed);
-// router.get('/my-vouchers', protect, getUserVouchers);
-
-// // ✅ Admin routes
-// router.post('/create', protect, adminOnly, createCoupon);
-// router.get('/admin/all', protect, adminOnly, getAllCoupons);
-// router.delete('/admin/:id', protect, adminOnly, deleteCoupon);
-
-// export default router;
-
-
 import express from 'express';
 import { 
     createCoupon, 
+    bulkCreateCoupons, // ✅ 50K+ bulk generation support
     applyCoupon, 
     markCouponAsUsed,
     getAllCoupons,
     deleteCoupon,
     getUserVouchers,
-    toggleCouponStatus      // ✅ Ye import add karo
+    toggleCouponStatus
 } from '../controllers/couponController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, restrictTo } from '../middleware/authMiddleware.js'; // ✅ restrictTo import kiya
 
 const router = express.Router();
 
-// User routes
-router.post('/apply', protect, applyCoupon);
-router.post('/mark-used', protect, markCouponAsUsed);
-router.get('/my-vouchers', protect, getUserVouchers);
+// 🛒 Customer & Astrologer Routes
+router.post('/apply', protect, restrictTo('user','customer', 'astrologer', 'admin', 'super_admin'), applyCoupon);
+router.post('/mark-used', protect, restrictTo('user','customer', 'astrologer', 'admin', 'super_admin'), markCouponAsUsed);
+router.get('/my-vouchers', protect, restrictTo('user','customer', 'astrologer', 'admin', 'super_admin'), getUserVouchers);
 
-// Admin routes
-router.post('/create', protect, adminOnly, createCoupon);
-router.get('/admin/all', protect, adminOnly, getAllCoupons);
-router.delete('/admin/:id', protect, adminOnly, deleteCoupon);
-router.put('/admin/:id/toggle', protect, adminOnly, toggleCouponStatus);  // ✅ Ye line add karo
+// 🛠️ Admin & Super Admin Routes (Coupon Management & Bulk Generation)
+router.post('/create', protect, restrictTo('admin', 'super_admin'), createCoupon);
+router.post('/bulk-create', protect, restrictTo('admin', 'super_admin'), bulkCreateCoupons); // ✅ Bulk coupons route
+router.get('/admin/all', protect, restrictTo('admin', 'super_admin'), getAllCoupons);
+router.delete('/admin/:id', protect, restrictTo('admin', 'super_admin'), deleteCoupon);
+router.put('/admin/:id/toggle', protect, restrictTo('admin', 'super_admin'), toggleCouponStatus);
 
 export default router;

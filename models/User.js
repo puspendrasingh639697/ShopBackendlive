@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -28,7 +27,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please provide a valid email"]
+        // match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please provide a valid email"]
     },
     password: { 
         type: String, 
@@ -47,7 +46,7 @@ const userSchema = new mongoose.Schema({
             },
             message: 'Phone number must be 10 digits'
         }
-    },  // ✅ COMMA ADDED HERE
+    },
     
     // =======================
     //   ROLE & PERMISSIONS
@@ -55,7 +54,7 @@ const userSchema = new mongoose.Schema({
     role: { 
         type: String, 
         default: 'user', 
-        enum: ['user', 'admin', 'super_admin']
+        enum: ['user', 'admin', 'super_admin', 'astrologer']
     },
     
     // =======================
@@ -105,34 +104,29 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // =======================
-//   🔒 PASSWORD METHODS
+//   🔒 PASSWORD METHODS & HOOKS
 // =======================
 
 userSchema.pre('save', async function(next) {
-    console.log("🔵 pre-save called, isModified password:", this.isModified('password'));
     try {
         if (!this.isModified('password')) {
-            console.log("🔵 password not modified, skipping hash");
             return next();
         }
-        console.log("🔵 hashing password...");
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        console.log("🔵 password hashed successfully");
         this.passwordChangedAt = Date.now();
         next();
     } catch (error) {
-        console.error("🔴 pre-save error:", error);
         next(error);
     }
 });
 
-// ✅ Compare entered password with hashed password
+// Compare entered password with hashed password
 userSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// ✅ Check if password was changed after token issued
+// Check if password was changed after token issued
 userSchema.methods.isPasswordChangedAfter = function(JWTTimestamp) {
     if (this.passwordChangedAt) {
         const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
@@ -141,19 +135,17 @@ userSchema.methods.isPasswordChangedAfter = function(JWTTimestamp) {
     return false;
 };
 
-// ✅ Increment failed login attempts
+// Increment failed login attempts
 userSchema.methods.incrementFailedLoginAttempts = async function() {
     this.failedLoginAttempts += 1;
-    
     if (this.failedLoginAttempts >= 10) {
         this.isLocked = true;
         this.lockUntil = Date.now() + 30 * 60 * 1000;
     }
-    
     await this.save();
 };
 
-// ✅ Reset failed login attempts
+// Reset failed login attempts
 userSchema.methods.resetFailedLoginAttempts = async function() {
     this.failedLoginAttempts = 0;
     this.isLocked = false;
@@ -161,21 +153,21 @@ userSchema.methods.resetFailedLoginAttempts = async function() {
     await this.save();
 };
 
-// ✅ Check if account is locked
-userSchema.methods.isAccountLocked = function() {
+// Check if account is locked
+userSchema.methods.isAccountLocked = async function() {
     if (this.isLocked && this.lockUntil > Date.now()) {
         return true;
     }
     if (this.isLocked && this.lockUntil <= Date.now()) {
         this.isLocked = false;
         this.lockUntil = null;
-        this.save();
+        await this.save();
         return false;
     }
     return false;
 };
 
-// ✅ Generate password reset token
+// Generate password reset token
 userSchema.methods.createPasswordResetToken = function() {
     const resetToken = crypto.randomBytes(32).toString('hex');
     this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
@@ -183,7 +175,7 @@ userSchema.methods.createPasswordResetToken = function() {
     return resetToken;
 };
 
-// ✅ Generate email verification token
+// Generate email verification token
 userSchema.methods.createEmailVerificationToken = function() {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     this.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
