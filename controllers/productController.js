@@ -467,12 +467,6 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 
-// =======================
-//   ADD PRODUCT
-// =======================
-// =======================
-//   ADD PRODUCT (WITH DEBUGGING)
-// =======================
 export const addProduct = async (req, res) => {
     console.log("--- 🚀 Add Product Request Start ---");
     console.log("BODY DATA:", req.body);
@@ -558,9 +552,7 @@ export const addProduct = async (req, res) => {
         });
     }
 };
-// =======================
-//   GET ALL PRODUCTS (with filtering & sorting)
-// =======================
+
 export const getProducts = async (req, res) => {
     try {
         const { keyword, category, sort, minPrice, maxPrice, minRating, inStock } = req.query;
@@ -641,9 +633,6 @@ export const getProducts = async (req, res) => {
     }
 };
 
-// =======================
-//   GET SINGLE PRODUCT BY ID
-// =======================
 export const getProductById = async (req, res) => {
     console.log("--- Fetching Single Product ID:", req.params.id, "---");
     try {
@@ -672,9 +661,7 @@ export const getProductById = async (req, res) => {
     }
 };
 
-// =======================
-//   UPDATE PRODUCT
-// =======================
+
 export const updateProduct = async (req, res) => {
     console.log("--- Updating Product ID:", req.params.id, "---");
     try {
@@ -715,9 +702,7 @@ export const updateProduct = async (req, res) => {
     }
 };
 
-// =======================
-//   DELETE PRODUCT
-// =======================
+
 export const deleteProduct = async (req, res) => {
     console.log("--- Deleting Product ID:", req.params.id, "---");
     try {
@@ -742,9 +727,7 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
-// =======================
-//   CREATE PRODUCT REVIEW
-// =======================
+
 export const createProductReview = async (req, res) => {
     const { rating, comment, title } = req.body;
 
@@ -805,9 +788,7 @@ export const createProductReview = async (req, res) => {
     }
 };
 
-// =======================
-//   GET PRODUCT REVIEWS
-// =======================
+
 export const getProductReviews = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -846,9 +827,7 @@ export const getProductReviews = async (req, res) => {
     }
 };
 
-// =======================
-//   SEARCH PRODUCTS
-// =======================
+
 export const searchProducts = async (req, res) => {
     const query = req.query.q || req.query.name;
     console.log("--- Searching for:", query, "---");
@@ -882,9 +861,7 @@ export const searchProducts = async (req, res) => {
     }
 };
 
-// =======================
-//   GET POPULAR PRODUCTS
-// =======================
+
 export const getPopularProducts = async (req, res) => {
     try {
         const products = await Product.find({})
@@ -904,9 +881,7 @@ export const getPopularProducts = async (req, res) => {
     }
 };
 
-// =======================
-//   GET RELATED PRODUCTS
-// =======================
+
 export const getRelatedProducts = async (req, res) => {
     try {
         const { id } = req.params;
