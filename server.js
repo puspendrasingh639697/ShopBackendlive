@@ -7,7 +7,6 @@ import compression from 'compression';
 import connectDB from './config/db.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 
-// Routes
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
