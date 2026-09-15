@@ -1,3 +1,14 @@
+// import express from "express";
+// import { getallpooja } from "../controllers/PoojaController.js";
+
+// const router = express.Router();
+
+// // Get all poojas with optional filters (pujaType, deity, search)
+// router.get('/allpooja', getallpooja);
+
+// export default router;
+
+
 
 // import express from 'express';
 // import { 
