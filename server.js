@@ -6,6 +6,9 @@ import cors from 'cors';
 import compression from 'compression';
 import connectDB from './config/db.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import  poojaRoutes  from './routes/PojabookingRoutes.js';
+import poojaBookingRoutes from "./routes/PojabookingRoutes.js";
+import bookingRoutes from './routes/bookingRoutes.js';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -127,6 +130,9 @@ app.use("/api/user", userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api', poojaRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use("/api", poojaBookingRoutes);
 
 // =======================
 //   HEALTH CHECK
@@ -175,4 +181,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`\n🔥 High-Scale Server started on port ${PORT}`);
     console.log(`📡 Server is ready to handle high traffic!\n`);
-});
+});     
