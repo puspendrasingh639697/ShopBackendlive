@@ -192,28 +192,68 @@ export const validateLogin = (req, res, next) => {
 };
 
 
-
 export const BookPoojaValidation = (req, res, next) => {
-    const { UserId, PoojaID, pujaType } = req.body;
-    
-    // Check mandatory fields
-    if (!UserId || !PoojaID) {
-        return res.status(400).json({ 
-            success: false, 
-            message: "Validation Error: UserId and PoojaID are required." 
+    // ⭐ Safety check — body exist karti hai?
+    if (!req.body || typeof req.body !== "object") {
+        return res.status(400).json({
+            success: false,
+            message: "Request body is missing or invalid JSON",
         });
     }
 
-    // Validate pujaType if provided
+    const { poojaId, names, phoneNumber, dateOfPooja, pujaType } = req.body;
+
+    // ─── Pooja ID ───
+    if (!poojaId) {
+        return res.status(400).json({
+            success: false,
+            message: "poojaId is required",
+        });
+    }
+
+    // ─── Devotee Names ───
+    if (!names || !Array.isArray(names) || names.length === 0) {
+        return res.status(400).json({
+            success: false,
+            message: "At least one devotee name is required",
+        });
+    }
+
+    // ─── Phone Number ───
+    if (!phoneNumber || phoneNumber.toString().trim().length < 10) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid 10-digit phone number is required",
+        });
+    }
+
+    // ─── Date of Pooja ───
+    if (!dateOfPooja) {
+        return res.status(400).json({
+            success: false,
+            message: "dateOfPooja is required",
+        });
+    }
+
+    // ─── pujaType (optional, agar diya hai toh validate karo) ───
     if (pujaType) {
-        const allowedTypes = ['live_virtual_puja', 'sankalp_prasad_puja', 'at_home_pandit'];
+        const allowedTypes = [
+            "live_virtual_puja",
+            "sankalp_prasad_puja",
+            "at_home_pandit",
+            "Virtual",
+            "Physical",
+        ];
         if (!allowedTypes.includes(pujaType)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid pujaType. Choose from live_virtual_puja, sankalp_prasad_puja, or at_home_pandit." 
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Invalid pujaType. Choose from live_virtual_puja, sankalp_prasad_puja, at_home_pandit, Virtual, or Physical.",
             });
         }
     }
+
+    // ⭐ UserId check yahan NAHI karenge — wo auth middleware (isAuthenticated) se aayega
 
     next();
 };

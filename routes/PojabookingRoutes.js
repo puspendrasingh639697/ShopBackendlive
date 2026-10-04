@@ -1,120 +1,234 @@
+// // // // import express from "express";
+// // // // import {
+// // // //   getallpooja,
+// // // //   poojaDetailsByName,
+// // // //   createPooja,
+// // // //   getPoojaById,
+// // // // } from "../controllers/PoojaController.js";
+// // // // import { createBooking } from "../controllers/BookPoojaController.js";
+// // // // import { GetBookPooja } from "../controllers/GetBookPoojaController.js";
+// // // // import {
+// // // //   createPoojaCheckout,
+// // // //   verifyPoojaPayment,
+// // // // } from "../controllers/poojaPaymentController.js";
 
+// // // // import { BookPoojaValidation } from "../middleware/validationMiddleware.js";
+// // // // import { protect, adminOnly } from "../middleware/authMiddleware.js";   // ⭐ CHANGE
+// // // // import upload from "../middleware/uploadMiddleware.js";
+
+// // // // const router = express.Router();
+
+// // // // // ─── Public ───
+// // // // router.get("/allpooja", getallpooja);
+// // // // router.get("/name/:PujaName", poojaDetailsByName);
+
+// // // // // ─── Protected (login zaroori) ───
+// // // // router.post("/bookpooja", protect, BookPoojaValidation, createBooking);
+// // // // router.get("/mybookings", protect, GetBookPooja);
+// // // // router.post("/create-checkout", protect, createPoojaCheckout);
+// // // // router.post("/verify-payment", protect, verifyPoojaPayment);
+
+// // // // // ─── Admin ───
+// // // // router.post("/createpooja", protect, adminOnly, upload.single("image"), createPooja);
+
+// // // // // ─── Dynamic (SABSE LAST) ───
+// // // // router.get("/:id", getPoojaById);
+
+// // // // export default router;
 
 
 // // // import express from "express";
-// // // import { getallpooja, poojaDetailsByName, createPooja, getPoojaById } from "../controllers/PoojaController.js";
-// // // import { GetBookPooja } from '../controllers/GetBookPoojaController.js';
-// // // import { BookPoojaValidation } from '../middleware/validationMiddleware.js';
-// // // import upload from '../middleware/uploadMiddleware.js';
+// // // import {
+// // //   getallpooja,
+// // //   poojaDetailsByName,
+// // //   createPooja,
+// // //   getPoojaById,
+// // // } from "../controllers/PoojaController.js";
+// // // import {
+// // //   createBooking,
+// // //   getMyBookings,
+// // //   getBookingById,
+// // //   cancelBooking,
+// // // } from "../controllers/BookPoojaController.js";
+// // // import { GetBookPooja } from "../controllers/GetBookPoojaController.js";
+// // // import {
+// // //   createPoojaCheckout,
+// // //   verifyPoojaPayment,
+// // // } from "../controllers/poojaPaymentController.js";
+
+// // // import { BookPoojaValidation } from "../middleware/validationMiddleware.js";
+// // // import { protect, adminOnly } from "../middleware/authMiddleware.js";
+// // // import upload from "../middleware/uploadMiddleware.js";
 
 // // // const router = express.Router();
 
-// // // router.get('/allpooja', getallpooja);
+// // // // ─── Public ───
+// // // router.get("/allpooja", getallpooja);
+// // // router.get("/name/:PujaName", poojaDetailsByName);
 
-// // // // ID wala route pehle rakhein
-// // // router.get('/pooja/:id', getPoojaById);
+// // // // ─── Protected (login zaroori) ───
+// // // router.post("/bookpooja", protect, BookPoojaValidation, createBooking);
+// // // router.get("/mybookings", protect, getMyBookings);
 
-// // // // Name wala route baad mein
-// // // router.get('/pooja/name/:PujaName', poojaDetailsByName);
+// // // // ⭐ Booking specific routes
+// // // router.get("/booking/:id", protect, getBookingById);
+// // // router.put("/booking/:id/cancel", protect, cancelBooking);
 
-// // // router.post('/createpooja', upload.single('image'), createPooja);
-// // // router.post('/bookpooja', BookPoojaValidation, GetBookPooja);
+// // // router.post("/create-checkout", protect, createPoojaCheckout);
+// // // router.post("/verify-payment", protect, verifyPoojaPayment);
+
+// // // // ─── Admin ───
+// // // router.post(
+// // //   "/createpooja",
+// // //   protect,
+// // //   adminOnly,
+// // //   upload.single("image"),
+// // //   createPooja
+// // // );
+
+// // // // ─── Dynamic (SABSE LAST) ───
+// // // router.get("/:id", getPoojaById);
 
 // // // export default router;
 
 
 // // import express from "express";
-// // import { getallpooja, poojaDetailsByName, createPooja, getPoojaById } from "../controllers/PoojaController.js";
-// // // Yahan GetBookPooja ki jagah createBooking import karo jo BookPoojaController mein hai
-// // import { createBooking } from '../controllers/BookPoojaController.js'; 
-// // import { GetBookPooja } from '../controllers/GetBookPoojaController.js';
-// // import { BookPoojaValidation } from '../middleware/validationMiddleware.js';
-// // import upload from '../middleware/uploadMiddleware.js';
+// // import {
+// //   getallpooja,
+// //   poojaDetailsByName,
+// //   createPooja,
+// //   getPoojaById,
+// // } from "../controllers/PoojaController.js";
+// // import { createBooking } from "../controllers/BookPoojaController.js";
+// // import { GetBookPooja } from "../controllers/GetBookPoojaController.js";
+// // import {
+// //   createPoojaCheckout,
+// //   verifyPoojaPayment,
+// // } from "../controllers/poojaPaymentController.js";
+
+// // import { BookPoojaValidation } from "../middleware/validationMiddleware.js";
+// // import { protect, adminOnly } from "../middleware/authMiddleware.js";
+// // import upload from "../middleware/uploadMiddleware.js";
 
 // // const router = express.Router();
 
-// // router.get('/allpooja', getallpooja);
+// // router.get("/allpooja", getallpooja);
+// // router.get("/name/:PujaName", poojaDetailsByName);
 
-// // // ID wala route pehle rakhein
-// // router.get('/pooja/:id', getPoojaById);
+// // router.post("/bookpooja", protect, BookPoojaValidation, createBooking);
+// // router.get("/mybookings", protect, GetBookPooja);
+// // router.post("/create-checkout", protect, createPoojaCheckout);
+// // router.post("/verify-payment", protect, verifyPoojaPayment);
 
-// // // Name wala route baad mein
-// // router.get('/pooja/name/:PujaName', poojaDetailsByName);
+// // router.post(
+// //   "/createpooja",
+// //   protect,
+// //   adminOnly,
+// //   upload.single("image"),
+// //   createPooja
+// // );
 
-// // router.post('/createpooja', upload.single('image'), createPooja);
-
-// // // Booking ke liye createBooking controller use karo
-// // router.post('/bookpooja', BookPoojaValidation, createBooking);
-
-// // // Agar saari bookings dekhne ke liye GetBookPooja route chahiye toh alag se GET bana lo:
-// // router.get('/mybookings', GetBookPooja);
+// // router.get("/:id", getPoojaById);
 
 // // export default router;
 
 
 // import express from "express";
-// import { getallpooja, poojaDetailsByName, createPooja, getPoojaById } from "../controllers/PoojaController.js";
-// import { createBooking } from '../controllers/BookPoojaController.js'; 
-// import { GetBookPooja } from '../controllers/GetBookPoojaController.js';
-// // Payment controllers import karein
-// import { createPoojaCheckout, verifyPoojaPayment } from '../controllers/poojaPaymentController.js';
+// import {
+//   getallpooja,
+//   poojaDetailsByName,
+//   createPooja,
+//   getPoojaById,
+// } from "../controllers/PoojaController.js";
+// import {
+//   createBooking,
+//   getBookingById,       // ⭐ ye
+//   cancelBooking,        // ⭐ ye
+// } from "../controllers/BookPoojaController.js";
+// import { GetBookPooja } from "../controllers/GetBookPoojaController.js";
+// import {
+//   createPoojaCheckout,
+//   verifyPoojaPayment,
+// } from "../controllers/poojaPaymentController.js";
 
-// import { BookPoojaValidation } from '../middleware/validationMiddleware.js';
-// import upload from '../middleware/uploadMiddleware.js';
+// import { BookPoojaValidation } from "../middleware/validationMiddleware.js";
+// import { protect, adminOnly } from "../middleware/authMiddleware.js";
+// import upload from "../middleware/uploadMiddleware.js";
 
 // const router = express.Router();
 
-// router.get('/allpooja', getallpooja);
+// router.get("/allpooja", getallpooja);
+// router.get("/name/:PujaName", poojaDetailsByName);
 
-// // ID wala route pehle rakhein
-// router.get('/pooja/:id', getPoojaById);
+// router.post("/bookpooja", protect, BookPoojaValidation, createBooking);
+// router.get("/mybookings", protect, GetBookPooja);
 
-// // Name wala route baad mein
-// router.get('/pooja/name/:PujaName', poojaDetailsByName);
+// // ⭐ Ye 2 lines ZAROORI hain
+// router.get("/booking/:id", protect, getBookingById);
+// router.put("/booking/:id/cancel", protect, cancelBooking);
 
-// router.post('/createpooja', upload.single('image'), createPooja);
+// router.post("/create-checkout", protect, createPoojaCheckout);
+// router.post("/verify-payment", protect, verifyPoojaPayment);
 
-// // 1. Booking initialize karne ke liye
-// router.post('/bookpooja', BookPoojaValidation, createBooking);
+// router.post(
+//   "/createpooja",
+//   protect,
+//   adminOnly,
+//   upload.single("image"),
+//   createPooja
+// );
 
-// // 2. User ki bookings dekhne ke liye
-// router.get('/mybookings', GetBookPooja);
-
-// // 3. Razorpay Order Create karne ke liye (Checkout)
-// router.post('/create-checkout', createPoojaCheckout);
-
-// // 4. Payment verify aur booking confirm karne ke liye
-// router.post('/verify-payment', verifyPoojaPayment);
+// router.get("/:id", getPoojaById);
 
 // export default router;
 
 
 import express from "express";
-import { getallpooja, poojaDetailsByName, createPooja, getPoojaById } from "../controllers/PoojaController.js";
-import { createBooking } from '../controllers/BookPoojaController.js'; 
-import { GetBookPooja } from '../controllers/GetBookPoojaController.js';
-import { createPoojaCheckout, verifyPoojaPayment } from '../controllers/poojaPaymentController.js';
+import {
+  getallpooja,
+  poojaDetailsByName,
+  createPooja,
+  getPoojaById,
+} from "../controllers/PoojaController.js";
+import {
+  createBooking,
+  getMyBookings,
+  getBookingById,
+  cancelBooking,
+} from "../controllers/BookPoojaController.js";
+import {
+  createPoojaCheckout,
+  verifyPoojaPayment,
+} from "../controllers/poojaPaymentController.js";
 
-import { BookPoojaValidation } from '../middleware/validationMiddleware.js';
-import upload from '../middleware/uploadMiddleware.js';
+import { BookPoojaValidation } from "../middleware/validationMiddleware.js";
+import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-// 1. Static routes ko hamesha dynamic (:id) routes se upar rakhein taaki routing conflict na ho
-router.get('/allpooja', getallpooja);
+// ─── Public ───
+router.get("/allpooja", getallpooja);
+router.get("/name/:PujaName", poojaDetailsByName);
 
-// 2. Name wala specific route
-router.get('/pooja/name/:PujaName', poojaDetailsByName);
+// ─── Protected ───
+router.post("/bookpooja", protect, BookPoojaValidation, createBooking);
+router.get("/mybookings", protect, getMyBookings);           // ⭐ ye
+router.get("/booking/:id", protect, getBookingById);
+router.put("/booking/:id/cancel", protect, cancelBooking);
+router.post("/create-checkout", protect, createPoojaCheckout);
+router.post("/verify-payment", protect, verifyPoojaPayment);
 
-// 3. ID wala dynamic route sabse last mein
-router.get('/pooja/:id', getPoojaById);
+// ─── Admin ───
+router.post(
+  "/createpooja",
+  protect,
+  adminOnly,
+  upload.single("image"),
+  createPooja
+);
 
-router.post('/createpooja', upload.single('image'), createPooja);
-
-// 4. Booking aur payment ke routes
-router.post('/bookpooja', BookPoojaValidation, createBooking);
-router.get('/mybookings', GetBookPooja);
-router.post('/create-checkout', createPoojaCheckout);
-router.post('/verify-payment', verifyPoojaPayment);
+// ─── Dynamic (SABSE LAST) ───
+router.get("/:id", getPoojaById);
 
 export default router;
