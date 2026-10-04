@@ -1,3 +1,190 @@
+// import express from 'express';
+// import path from 'path';
+// import { fileURLToPath } from 'url';
+// import dotenv from 'dotenv';
+// import cors from 'cors';
+// import compression from 'compression';
+// import connectDB from './config/db.js';
+// import categoryRoutes from './routes/categoryRoutes.js';
+// import  poojaRoutes  from './routes/PojabookingRoutes.js';
+// import poojaBookingRoutes from "./routes/PojabookingRoutes.js";
+// import bookingRoutes from './routes/bookingRoutes.js';
+
+// import authRoutes from './routes/authRoutes.js';
+// import productRoutes from './routes/productRoutes.js';
+// import cartRoutes from './routes/cartRoutes.js';
+// import orderRoutes from './routes/orderRoutes.js';
+// import paymentRoutes from './routes/paymentRoutes.js';
+// import couponRoutes from './routes/couponRoutes.js';
+// import userRoutes from "./routes/userRoutes.js";
+// import adminRoutes from './routes/adminRoutes.js';
+// import contentRoutes from './routes/contentRoutes.js';
+// import notificationRoutes from './routes/notificationRoutes.js';
+// import wishlistRoutes from './routes/wishlistRoutes.js';
+// import reviewRoutes from './routes/reviewRoutes.js';
+
+// // ✅ Security Middleware Imports (Rate limiters commented out / removed)
+// import {
+//     securityHeaders,
+//     noSqlSanitize,
+//     globalLimiter,
+//     // authLimiter,
+//     // adminLimiter,
+//     sanitizeQueryParams,
+//     sanitizeBody,
+//     preventParameterPollution,
+//     requestSizeLimiter,
+//     preventSqlInjection
+// } from './middleware/securityMiddleware.js';
+
+// // Configuration
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// dotenv.config();
+
+// // App initialize
+// const app = express();
+
+// // ✅ Trust proxy for Render.com / Cloudflare rate limiting
+// app.set('trust proxy', 1);
+
+// // =======================
+// //   🔒 SECURITY & PERFORMANCE MIDDLEWARE
+// // =======================
+
+// // 1. Security Headers (Helmet)
+// app.use(securityHeaders);
+
+// // 2. Response Compression
+// app.use(compression());
+
+// // 3. CORS setup with strict options
+// app.use(cors({
+//     origin: function(origin, callback) {
+//         const allowedOrigins = [
+//             'http://localhost:5173',
+//             'http://localhost:5174',
+//             'https://piyush-products.vercel.app',
+//             'https://thelootbazaar.vercel.app',
+//             'https://admin.yourdomain.com'
+//         ];
+        
+//         if (!origin) return callback(null, true);
+        
+//         if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+//             callback(null, true);
+//         } else {
+//             callback(new Error('Not allowed by CORS'));
+//         }
+//     },
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+//     exposedHeaders: ['Content-Range', 'X-Content-Range'],
+//     maxAge: 600
+// }));
+
+// // 4. Request Size Limiter (10MB limit)
+// app.use(requestSizeLimiter);
+
+// // 5. Global Rate Limiting (Aap chahein toh ise bhi hata sakte hain, filhal rehne diya hai)
+// app.use(globalLimiter);
+
+// // 6. Body Parser (MUST BE BEFORE sanitizers so form-data/files are parsed properly)
+// app.use(express.json({ limit: '10mb' }));
+// app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// // 7. NoSQL & SQL Injection Protection & Sanitizers
+// app.use(noSqlSanitize);
+// app.use(preventSqlInjection);
+// app.use(sanitizeQueryParams);
+// app.use(sanitizeBody);
+
+// // 8. Prevent Parameter Pollution
+// app.use(preventParameterPollution);
+
+// // =======================
+// //   STATIC FILES
+// // =======================
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// // =======================
+// //   DATABASE CONNECTION
+// // =======================
+// connectDB();
+
+// // =======================
+// //   ROUTES
+// // =======================
+// // Public & Feature Routes (Saare routes ab yahan properly mapped hain)
+// app.use('/api/auth', authRoutes);
+// app.use('/api/categories', categoryRoutes);
+// app.use('/api/products', productRoutes);
+// app.use('/api/wishlist', wishlistRoutes);
+// app.use('/api/cart', cartRoutes);
+// app.use('/api/orders', orderRoutes);
+// app.use('/api/payment', paymentRoutes);
+// app.use('/api/coupon', couponRoutes);
+// app.use('/api/reviews', reviewRoutes);
+// app.use("/api/user", userRoutes);
+// app.use('/api/admin', adminRoutes);
+// app.use('/api/content', contentRoutes);
+// app.use('/api/notifications', notificationRoutes);
+// app.use('/api', poojaRoutes);
+// app.use('/api/booking', bookingRoutes);
+// app.use("/api", poojaBookingRoutes);
+
+// // =======================
+// //   HEALTH CHECK
+// // =======================
+// app.get('/', (req, res) => {
+//     res.json({
+//         success: true,
+//         status: 'OK',
+//         message: '🚀 High-Performance Backend is running with full security!',
+//         timestamp: new Date().toISOString()
+//     });
+// });
+
+// // =======================
+// //   404 Handler
+// // =======================
+// app.use((req, res) => {
+//     res.status(404).json({
+//         success: false,
+//         message: `Route ${req.originalUrl} not found`,
+//         timestamp: new Date().toISOString()
+//     });
+// });
+
+// // =======================
+// //   Global Error Handler (Updated)
+// // =======================
+// app.use((err, req, res, next) => {
+//     console.error('❌ Global Error Caught:', err);
+    
+//     const errorMessage = err?.message || (typeof err === 'string' ? err : 'Internal Server Error');
+//     const statusCode = err?.status || err?.statusCode || 500;
+    
+//     res.status(statusCode).json({
+//         success: false,
+//         message: errorMessage,
+//         ...(process.env.NODE_ENV !== 'production' && { stack: err?.stack }),
+//         timestamp: new Date().toISOString()
+//     });
+// });
+
+// // =======================
+// //   PORT SETTINGS
+// // =======================
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//     console.log(`\n🔥 High-Scale Server started on port ${PORT}`);
+//     console.log(`📡 Server is ready to handle high traffic!\n`);
+// });     
+
+
+
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -5,31 +192,29 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import compression from 'compression';
 import connectDB from './config/db.js';
-import categoryRoutes from './routes/categoryRoutes.js';
-import  poojaRoutes  from './routes/PojabookingRoutes.js';
-import poojaBookingRoutes from "./routes/PojabookingRoutes.js";
-import bookingRoutes from './routes/bookingRoutes.js';
 
+// ─── Routes ───
+import categoryRoutes from './routes/categoryRoutes.js';
+import poojaRoutes from './routes/PojabookingRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
-import userRoutes from "./routes/userRoutes.js";
+import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import contentRoutes from './routes/contentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 
-// ✅ Security Middleware Imports (Rate limiters commented out / removed)
+// ─── Security Middleware ───
 import {
     securityHeaders,
     noSqlSanitize,
     globalLimiter,
-    // authLimiter,
-    // adminLimiter,
     sanitizeQueryParams,
     sanitizeBody,
     preventParameterPollution,
@@ -37,30 +222,18 @@ import {
     preventSqlInjection
 } from './middleware/securityMiddleware.js';
 
-// Configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config();
 
-// App initialize
 const app = express();
-
-// ✅ Trust proxy for Render.com / Cloudflare rate limiting
 app.set('trust proxy', 1);
 
-// =======================
-//   🔒 SECURITY & PERFORMANCE MIDDLEWARE
-// =======================
-
-// 1. Security Headers (Helmet)
 app.use(securityHeaders);
-
-// 2. Response Compression
 app.use(compression());
 
-// 3. CORS setup with strict options
 app.use(cors({
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
         const allowedOrigins = [
             'http://localhost:5173',
             'http://localhost:5174',
@@ -68,9 +241,7 @@ app.use(cors({
             'https://thelootbazaar.vercel.app',
             'https://admin.yourdomain.com'
         ];
-        
         if (!origin) return callback(null, true);
-        
         if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
@@ -84,39 +255,23 @@ app.use(cors({
     maxAge: 600
 }));
 
-// 4. Request Size Limiter (10MB limit)
 app.use(requestSizeLimiter);
-
-// 5. Global Rate Limiting (Aap chahein toh ise bhi hata sakte hain, filhal rehne diya hai)
 app.use(globalLimiter);
 
-// 6. Body Parser (MUST BE BEFORE sanitizers so form-data/files are parsed properly)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 7. NoSQL & SQL Injection Protection & Sanitizers
 app.use(noSqlSanitize);
 app.use(preventSqlInjection);
 app.use(sanitizeQueryParams);
 app.use(sanitizeBody);
-
-// 8. Prevent Parameter Pollution
 app.use(preventParameterPollution);
 
-// =======================
-//   STATIC FILES
-// =======================
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// =======================
-//   DATABASE CONNECTION
-// =======================
 connectDB();
 
-// =======================
-//   ROUTES
-// =======================
-// Public & Feature Routes (Saare routes ab yahan properly mapped hain)
+// ─── Routes ───
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
@@ -126,29 +281,32 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use("/api/user", userRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
+
 app.use('/api', poojaRoutes);
 app.use('/api/booking', bookingRoutes);
-app.use("/api", poojaBookingRoutes);
 
-// =======================
-//   HEALTH CHECK
-// =======================
+app.use((req, res, next) => {
+    if (req.path === '/api/bookpooja') {
+        console.log('🔍 After all middlewares — req.body:', req.body);
+    }
+    next();
+});
+
+// ─── Health Check ───
 app.get('/', (req, res) => {
     res.json({
         success: true,
         status: 'OK',
-        message: '🚀 High-Performance Backend is running with full security!',
+        message: '🚀 Backend running!',
         timestamp: new Date().toISOString()
     });
 });
 
-// =======================
-//   404 Handler
-// =======================
+// ─── 404 ───
 app.use((req, res) => {
     res.status(404).json({
         success: false,
@@ -157,15 +315,11 @@ app.use((req, res) => {
     });
 });
 
-// =======================
-//   Global Error Handler (Updated)
-// =======================
+// ─── Global Error Handler ───
 app.use((err, req, res, next) => {
-    console.error('❌ Global Error Caught:', err);
-    
-    const errorMessage = err?.message || (typeof err === 'string' ? err : 'Internal Server Error');
+    console.error('❌ Global Error:', err);
+    const errorMessage = err?.message || 'Internal Server Error';
     const statusCode = err?.status || err?.statusCode || 500;
-    
     res.status(statusCode).json({
         success: false,
         message: errorMessage,
@@ -174,11 +328,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// =======================
-//   PORT SETTINGS
-// =======================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`\n🔥 High-Scale Server started on port ${PORT}`);
-    console.log(`📡 Server is ready to handle high traffic!\n`);
-});     
+    console.log(`\n🔥 Server started on port ${PORT}\n`);
+});
