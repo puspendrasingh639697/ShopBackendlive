@@ -340,6 +340,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import compression from 'compression';
 import connectDB from './config/db.js';
+import chadhavaRoutes from "./routes/ChadhavaRoutes.js";
 
 // ─── Routes ───
 import categoryRoutes from './routes/categoryRoutes.js';
@@ -465,9 +466,10 @@ app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
-
+app.use("/api/chadhava", chadhavaRoutes);
 app.use('/api', poojaRoutes);
 app.use('/api/booking', bookingRoutes);
+
 
 // ─── Health Check ───
 app.get('/', (req, res) => {
