@@ -212,3 +212,11 @@ ChadhavaSchema.pre(/^find/, function (next) {
 
 export default mongoose.models.Chadhava ||
   mongoose.model("Chadhava", ChadhavaSchema);
+
+
+
+
+
+
+
+
