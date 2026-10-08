@@ -113,8 +113,7 @@ const orderSchema = mongoose.Schema(
       },
     ],
     shippingAddress: {
-      // fullName: { type: String, required: true },
-      //  // 👈 Ye add kiya (Frontend se aa raha hai)
+      
        fullName: { type: String, required: false },
       street: { type: String, required: true },
       city: { type: String, required: true },
