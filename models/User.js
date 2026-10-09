@@ -184,3 +184,4 @@ userSchema.methods.createEmailVerificationToken = function() {
 };
 
 export default mongoose.model('User', userSchema);
+
