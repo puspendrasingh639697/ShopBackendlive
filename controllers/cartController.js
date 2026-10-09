@@ -126,11 +126,54 @@ export const getCart = async (req, res) => {
 // };
 
 
+// export const removeFromCart = async (req, res) => {
+//     try {
+//         const { userId, productId } = req.params;
+
+//         // ✅ Sirf userId check karo, productId optional rakho
+//         if (!userId || !isValidId(userId)) {
+//             return res.status(400).json({ success: false, message: "Valid User ID required!" });
+//         }
+
+//         const cart = await Cart.findOne({ userId });
+//         if (!cart) {
+//             return res.status(404).json({ success: false, message: "Cart nahi mila!" });
+//         }
+
+//         // ✅ Filter: null wale items bhi hatao, aur productId se match karo
+//         cart.items = cart.items.filter(item => {
+//             // Agar item null hai ya productId null hai, to hata do
+//             if (!item || !item.productId) return false;
+            
+//             // Agar productId valid hai aur match karta hai, to hata do
+//             if (productId && isValidId(productId) && item.productId.toString() === productId.toString()) {
+//                 return false;
+//             }
+            
+//             return true;
+//         });
+        
+//         await cart.save();
+
+//         const updatedCart = await Cart.findOne({ userId }).populate('items.productId');
+
+//         return res.status(200).json({ 
+//             success: true, 
+//             message: "Product hat gaya!", 
+//             cart: updatedCart 
+//         });
+
+//     } catch (error) {
+//         console.error("removeFromCart error:", error);
+//         return res.status(500).json({ success: false, message: error.message });
+//     }
+// };
+
+
 export const removeFromCart = async (req, res) => {
     try {
         const { userId, productId } = req.params;
 
-        // ✅ Sirf userId check karo, productId optional rakho
         if (!userId || !isValidId(userId)) {
             return res.status(400).json({ success: false, message: "Valid User ID required!" });
         }
@@ -140,16 +183,12 @@ export const removeFromCart = async (req, res) => {
             return res.status(404).json({ success: false, message: "Cart nahi mila!" });
         }
 
-        // ✅ Filter: null wale items bhi hatao, aur productId se match karo
+        // ✅ null wale items bhi hatao
         cart.items = cart.items.filter(item => {
-            // Agar item null hai ya productId null hai, to hata do
-            if (!item || !item.productId) return false;
-            
-            // Agar productId valid hai aur match karta hai, to hata do
+            if (!item || !item.productId) return false; // null wale hatao
             if (productId && isValidId(productId) && item.productId.toString() === productId.toString()) {
-                return false;
+                return false; // match wale hatao
             }
-            
             return true;
         });
         
