@@ -1,6 +1,7 @@
 
 
 
+
 // import mongoose from "mongoose";
 
 // const PoojaListSchema = new mongoose.Schema(
@@ -18,7 +19,6 @@
 //       unique: true,
 //       lowercase: true,
 //       index: true,
-//       // hanuman-chalisa-sundarkand-path-puja
 //     },
 
 //     templeName: {
@@ -28,7 +28,6 @@
 //       index: true,
 //     },
 
-//     // ─── Temple Reference (better than storing name) ───
 //     templeId: {
 //       type: mongoose.Schema.Types.ObjectId,
 //       ref: "Temple",
@@ -79,7 +78,7 @@
 //       default: "",
 //     },
 //     images: {
-//       type: [String],   // multiple images ke liye
+//       type: [String],
 //       default: [],
 //     },
 
@@ -108,11 +107,11 @@
 
 //     // ─── Details ───
 //     duration: {
-//       type: String,   // "2 hours", "45 mins"
+//       type: String,
 //       default: "",
 //     },
 //     benefits: {
-//       type: [String],  // ["Health", "Prosperity"]
+//       type: [String],
 //       default: [],
 //     },
 //     language: {
@@ -120,7 +119,44 @@
 //       default: "Hindi",
 //     },
 
-//     // ─── Stats (for sorting "popular" poojas) ───
+//     // ═══════════════════════════════════════
+//     //   ⭐ SLOT MANAGEMENT (NEW)
+//     // ═══════════════════════════════════════
+//     slots: {
+//       type: [
+//         {
+//           name: {
+//             type: String,
+//             required: true,
+//             enum: ["morning", "afternoon", "evening"],
+//           },
+//           time: { type: String, required: true },
+//           maxBookings: { type: Number, default: 20, min: 1 },
+//         },
+//       ],
+//       default: [
+//         { name: "morning", time: "06:00 AM - 09:00 AM", maxBookings: 20 },
+//         { name: "afternoon", time: "12:00 PM - 03:00 PM", maxBookings: 20 },
+//         { name: "evening", time: "05:00 PM - 08:00 PM", maxBookings: 20 },
+//       ],
+//     },
+
+//     // ═══════════════════════════════════════
+//     //   ⭐ CAPACITY LIMITS (NEW)
+//     // ═══════════════════════════════════════
+//     maxBookingsPerDay: {
+//       type: Number,
+//       default: 50,
+//       min: 1,
+//     },
+
+//     bookingCutoffHours: {
+//       type: Number,
+//       default: 24,
+//       min: 0,
+//     },
+
+//     // ─── Stats ───
 //     bookingCount: {
 //       type: Number,
 //       default: 0,
@@ -186,10 +222,9 @@
 // );
 
 // // ═══════════════════════════════════════
-// //   INDEXES (1M users ke liye critical)
+// //   INDEXES
 // // ═══════════════════════════════════════
 
-// // Text search — "hanuman", "shiv", "health" etc.
 // PoojaListSchema.index({
 //   PujaName: "text",
 //   templeName: "text",
@@ -197,14 +232,12 @@
 //   tags: "text",
 // });
 
-// // Compound indexes — common filter combinations
 // PoojaListSchema.index({ pujaType: 1, status: 1, isDeleted: 1 });
 // PoojaListSchema.index({ "location.city": 1, pujaType: 1, status: 1 });
 // PoojaListSchema.index({ price: 1, status: 1 });
 // PoojaListSchema.index({ isFeatured: -1, bookingCount: -1, status: 1 });
 // PoojaListSchema.index({ createdAt: -1 });
 
-// // Unique constraint — same temple + same puja name duplicate na ho
 // PoojaListSchema.index(
 //   { PujaName: 1, templeName: 1 },
 //   { unique: true, partialFilterExpression: { isDeleted: false } }
@@ -219,11 +252,17 @@
 //   return prices.length ? Math.min(...prices) : this.price;
 // });
 
+// // ⭐ Total daily capacity
+// PoojaListSchema.virtual("totalDailyCapacity").get(function () {
+//   if (!this.slots || this.slots.length === 0) return this.maxBookingsPerDay;
+//   const slotSum = this.slots.reduce((sum, s) => sum + (s.maxBookings || 0), 0);
+//   return Math.min(slotSum, this.maxBookingsPerDay);
+// });
+
 // // ═══════════════════════════════════════
 // //   MIDDLEWARES
 // // ═══════════════════════════════════════
 
-// // Auto-generate slug from PujaName
 // PoojaListSchema.pre("save", function (next) {
 //   if (this.isModified("PujaName") || !this.slug) {
 //     this.slug = this.PujaName
@@ -236,7 +275,6 @@
 //   next();
 // });
 
-// // Exclude soft-deleted by default
 // PoojaListSchema.pre(/^find/, function (next) {
 //   if (!this.getOptions().includeDeleted) {
 //     this.where({ isDeleted: false });
@@ -269,11 +307,10 @@
 //     .sort({ [sortBy]: order })
 //     .skip(skip)
 //     .limit(limit)
-//     .lean();   // ⭐ lean() for performance
+//     .lean();
 // };
 
 // export default mongoose.model("PoojaInfo", PoojaListSchema);
-
 
 
 import mongoose from "mongoose";
@@ -394,7 +431,7 @@ const PoojaListSchema = new mongoose.Schema(
     },
 
     // ═══════════════════════════════════════
-    //   ⭐ SLOT MANAGEMENT (NEW)
+    //   ⭐ SLOT MANAGEMENT
     // ═══════════════════════════════════════
     slots: {
       type: [
@@ -416,7 +453,7 @@ const PoojaListSchema = new mongoose.Schema(
     },
 
     // ═══════════════════════════════════════
-    //   ⭐ CAPACITY LIMITS (NEW)
+    //   ⭐ CAPACITY LIMITS
     // ═══════════════════════════════════════
     maxBookingsPerDay: {
       type: Number,
@@ -526,7 +563,6 @@ PoojaListSchema.virtual("startingPrice").get(function () {
   return prices.length ? Math.min(...prices) : this.price;
 });
 
-// ⭐ Total daily capacity
 PoojaListSchema.virtual("totalDailyCapacity").get(function () {
   if (!this.slots || this.slots.length === 0) return this.maxBookingsPerDay;
   const slotSum = this.slots.reduce((sum, s) => sum + (s.maxBookings || 0), 0);
@@ -538,6 +574,7 @@ PoojaListSchema.virtual("totalDailyCapacity").get(function () {
 // ═══════════════════════════════════════
 
 PoojaListSchema.pre("save", function (next) {
+  // ⭐ 1. Slug auto-generate
   if (this.isModified("PujaName") || !this.slug) {
     this.slug = this.PujaName
       .toLowerCase()
@@ -546,6 +583,38 @@ PoojaListSchema.pre("save", function (next) {
       .replace(/\s+/g, "-")
       .substring(0, 200);
   }
+
+  // ⭐ 2. AUTO-PRICING
+  if (this.price > 0) {
+    const needsPricing =
+      !this.pricing ||
+      (this.pricing.single === 0 &&
+        this.pricing.family === 0 &&
+        this.pricing.group === 0 &&
+        this.pricing.premium === 0);
+
+    if (needsPricing) {
+      // Poora pricing set karo
+      this.pricing = {
+        single: this.price,
+        family: Math.round((this.price * 2.35) / 100) * 100,
+        group: Math.round((this.price * 5.87) / 100) * 100,
+        premium: Math.round((this.price * 11.75) / 100) * 100,
+      };
+    } else {
+      // Sirf missing packages fill karo
+      if (this.pricing.family === 0) {
+        this.pricing.family = Math.round((this.price * 2.35) / 100) * 100;
+      }
+      if (this.pricing.group === 0) {
+        this.pricing.group = Math.round((this.price * 5.87) / 100) * 100;
+      }
+      if (this.pricing.premium === 0) {
+        this.pricing.premium = Math.round((this.price * 11.75) / 100) * 100;
+      }
+    }
+  }
+
   next();
 });
 

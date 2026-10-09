@@ -27,7 +27,7 @@ export const validateUser = (req, res, next) => {
     }
     
     // Email validation (Flexible standard regex)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+   const emailRegex = /^[^\s@]+@[^\s@]+$/; 
     if (!email) {
         errors.push('Email is required');
     } else if (!emailRegex.test(email)) {
