@@ -25,6 +25,7 @@ import contentRoutes from './routes/contentRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import pushNotificationRoutes from './routes/pushNotificationRoutes.js';
 
 // ─── Security Middleware ───
 import {
@@ -135,9 +136,14 @@ app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/push-notifications', pushNotificationRoutes);
 app.use("/api/chadhava", chadhavaRoutes);
 app.use('/api', poojaRoutes);
 app.use('/api/booking', bookingRoutes);
+
+
+console.log('🔍 pushNotificationRoutes:', typeof pushNotificationRoutes);
+
 
 
 // ─── Health Check ───

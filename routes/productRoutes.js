@@ -1,12 +1,3 @@
-// import express from "express";
-// import { getallpooja } from "../controllers/PoojaController.js";
-
-// const router = express.Router();
-
-// // Get all poojas with optional filters (pujaType, deity, search)
-// router.get('/allpooja', getallpooja);
-
-// export default router;
 
 
 
@@ -17,33 +8,36 @@
 //     addProduct,
 //     updateProduct,
 //     deleteProduct,
-//     createProductReview,   // ✅ ADD THIS
-//     getProductReviews      // ✅ ADD THIS
+//     createProductReview,
+//     getProductReviews,
+//     searchProducts,
+//     getPopularProducts,
+//     getRelatedProducts
 // } from '../controllers/productController.js';
 // import { protect, restrictTo } from '../middleware/authMiddleware.js';
 // import upload from '../middleware/uploadMiddleware.js';
-// import { validateProduct, validateId } from '../middleware/validationMiddleware.js';
+// import {  validateId } from '../middleware/validationMiddleware.js';
 
 // const router = express.Router();
 
 // // =======================
 // //   PUBLIC ROUTES
 // // =======================
-// router.get('/all', getProducts);
-// router.get('/:id', validateId, getProductById);
+// router.get('/all', getProducts);           // List all products
+// router.get('/search', searchProducts);      // Search products by keyword/category
+// router.get('/popular', getPopularProducts); // Popular products for Home page
+// router.get('/:id', validateId, getProductById); // Get single product details
+// router.get('/:id/related', validateId, getRelatedProducts); // Related products
+// router.get('/:id/reviews', validateId, getProductReviews);   // Get all reviews
 
 // // =======================
-// //   REVIEWS ROUTES (PUBLIC + PROTECTED)
+// //   REVIEWS ROUTES (PROTECTED)
 // // =======================
-
-// // ✅ Get all reviews for a product (Public)
-// router.get('/:id/reviews', validateId, getProductReviews);
-
-// // ✅ Add a review (Protected - User must be logged in)
+// // Add a review (User must be logged in)
 // router.post('/:id/reviews', protect, validateId, createProductReview);
 
 // // =======================
-// //   PROTECTED ADMIN ROUTES (RBAC) with Validation
+// //   PROTECTED ADMIN ROUTES (RBAC)
 // // =======================
 
 // // Add Product
@@ -52,7 +46,7 @@
 //     protect, 
 //     restrictTo('super_admin', 'admin', 'manager', 'editor'), 
 //     upload.single('image'), 
-//     validateProduct,
+//     // validateProduct,
 //     addProduct
 // );
 
@@ -63,7 +57,7 @@
 //     restrictTo('super_admin', 'admin', 'manager', 'editor'), 
 //     upload.single('image'), 
 //     validateId,
-//     validateProduct,
+//     // validateProduct,
 //     updateProduct
 // );
 
@@ -78,7 +72,6 @@
 
 // export default router;
 
-
 import express from 'express';
 import { 
     getProducts,
@@ -90,28 +83,29 @@ import {
     getProductReviews,
     searchProducts,
     getPopularProducts,
-    getRelatedProducts
+    getRelatedProducts,
+    uploadImage,     // ✅ NAYA
+    deleteImage      // ✅ NAYA
 } from '../controllers/productController.js';
 import { protect, restrictTo } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
-import {  validateId } from '../middleware/validationMiddleware.js';
+import { validateId } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
 // =======================
 //   PUBLIC ROUTES
 // =======================
-router.get('/all', getProducts);           // List all products
-router.get('/search', searchProducts);      // Search products by keyword/category
-router.get('/popular', getPopularProducts); // Popular products for Home page
-router.get('/:id', validateId, getProductById); // Get single product details
-router.get('/:id/related', validateId, getRelatedProducts); // Related products
-router.get('/:id/reviews', validateId, getProductReviews);   // Get all reviews
+router.get('/all', getProducts);
+router.get('/search', searchProducts);
+router.get('/popular', getPopularProducts);
+router.get('/:id', validateId, getProductById);
+router.get('/:id/related', validateId, getRelatedProducts);
+router.get('/:id/reviews', validateId, getProductReviews);
 
 // =======================
 //   REVIEWS ROUTES (PROTECTED)
 // =======================
-// Add a review (User must be logged in)
 router.post('/:id/reviews', protect, validateId, createProductReview);
 
 // =======================
@@ -124,7 +118,6 @@ router.post(
     protect, 
     restrictTo('super_admin', 'admin', 'manager', 'editor'), 
     upload.single('image'), 
-    // validateProduct,
     addProduct
 );
 
@@ -135,7 +128,6 @@ router.put(
     restrictTo('super_admin', 'admin', 'manager', 'editor'), 
     upload.single('image'), 
     validateId,
-    // validateProduct,
     updateProduct
 );
 
@@ -146,6 +138,27 @@ router.delete(
     restrictTo('super_admin', 'admin'), 
     validateId,
     deleteProduct
+);
+
+// ═══════════════════════════════════════
+//   ✅ NAYE ROUTES — IMAGE UPLOAD / DELETE
+// ═══════════════════════════════════════
+
+// ✅ POST /api/products/admin/upload
+router.post(
+    '/admin/upload',
+    protect,
+    restrictTo('super_admin', 'admin', 'manager', 'editor'),
+    upload.single('image'),
+    uploadImage
+);
+
+// ✅ DELETE /api/products/admin/upload/:publicId
+router.delete(
+    '/admin/upload/:publicId',
+    protect,
+    restrictTo('super_admin', 'admin'),
+    deleteImage
 );
 
 export default router;
