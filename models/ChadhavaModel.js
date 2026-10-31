@@ -63,7 +63,14 @@ const ChadhavaSchema = new mongoose.Schema(
 
     // ─── Temple & Deity ───
     templeName: { type: String, required: true, index: true },
-    templeId: { type: String, default: null, index: true },
+    // models/ChadhavaModel.js me ye field dhundho aur update karo
+templeId: { 
+  type: mongoose.Schema.Types.ObjectId, 
+  ref: 'Temple', 
+  default: null, 
+  index: true 
+},
+    // templeId: { type: String, default: null, index: true },
     deity: {
       type: String,
       enum: [

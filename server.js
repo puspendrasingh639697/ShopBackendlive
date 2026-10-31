@@ -8,7 +8,8 @@ import cors from 'cors';
 import compression from 'compression';
 import connectDB from './config/db.js';
 import chadhavaRoutes from "./routes/ChadhavaRoutes.js";
-
+import templeRoutes from './routes/templeRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 // ─── Routes ───
 import categoryRoutes from './routes/categoryRoutes.js';
 import poojaRoutes from './routes/PojabookingRoutes.js';
@@ -140,6 +141,8 @@ app.use('/api/push-notifications', pushNotificationRoutes);
 app.use("/api/chadhava", chadhavaRoutes);
 app.use('/api', poojaRoutes);
 app.use('/api/booking', bookingRoutes);
+app.use('/api/temples', templeRoutes);
+app.use('/api/ai', aiRoutes);
 
 
 console.log('🔍 pushNotificationRoutes:', typeof pushNotificationRoutes);
