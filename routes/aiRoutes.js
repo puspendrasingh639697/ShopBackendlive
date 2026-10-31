@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const router = express.Router();
 
 // 🔥 Key direct daal di hai
-const genAI = new GoogleGenerativeAI("AQ.Ab8RN6INxRL0I1JuKq6ldpqzPwKY5XbtTS9W9rHz9djCFM5ICA");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post('/chat', async (req, res) => {
   try {
